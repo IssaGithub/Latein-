@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - cursor/app-konzept-datenmodell-cf88
   workflow_dispatch:
 
 permissions:

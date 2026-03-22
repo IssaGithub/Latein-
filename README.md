@@ -38,7 +38,7 @@ node --test tests/smartCorrection.test.js
 Die statische Demo-Seite liegt in `site/` und wird ueber GitHub Actions automatisch nach GitHub Pages deployed:
 
 - Workflow: `.github/workflows/deploy-pages.yml`
-- Trigger: Push auf `main` oder `cursor/app-konzept-datenmodell-cf88`
+- Trigger: Push auf `main` (oder manueller Workflow-Start)
 
 Erwartete URL nach erfolgreichem Deployment:
 
