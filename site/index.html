@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Latein Sprint App</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <p class="label">Motivation + Struktur + LRS-Fokus</p>
+      <h1>Latein Sprint App</h1>
+      <p>
+        Vom Frust zum Erfolg: kurze Daily Sprints, intelligente Korrektur und
+        ein Datenmodell, das Stamm und Endung sauber trennt.
+      </p>
+      <a class="button" href="#demo">LRS-Filter testen</a>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h2>User Flow (5 Minuten)</h2>
+        <ol>
+          <li>
+            <strong>Phase A - Erkennen:</strong> Audio + Wort, Antwort per Bild
+            oder Bedeutung.
+          </li>
+          <li>
+            <strong>Phase B - Struktur:</strong> Wortstamm + Endungen, richtige
+            Endung antippen.
+          </li>
+          <li>
+            <strong>Phase C - Produktion:</strong> Wort aktiv schreiben,
+            anschliessend LRS-freundliche Auswertung.
+          </li>
+        </ol>
+      </section>
+
+      <section class="card">
+        <h2>Datenmodell (Kern)</h2>
+        <ul>
+          <li><code>vocabulary</code>: lemma, word_stem, word_type, audio</li>
+          <li><code>grammar_suffixes</code>: suffix, function_label, color</li>
+          <li>
+            <code>vocabulary_form</code>: Verknuepfung von Stamm + Endung
+          </li>
+          <li>
+            <code>user_progress</code>: last_seen, stability, last_error_type
+          </li>
+          <li><code>image_upload</code> + <code>generated_task</code></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Bild-Upload zu Aufgaben</h2>
+        <p>
+          Upload -> OCR/Extraktion -> Aufgaben-Generator -> Freigabe ->
+          Sprint-Aufgaben.
+        </p>
+        <p>
+          So lassen sich Buchseiten oder Arbeitsblaetter direkt in uebbare
+          Aufgaben umwandeln.
+        </p>
+      </section>
+
+      <section class="card" id="demo">
+        <h2>Live Demo: Smart Correction (LRS-Filter)</h2>
+        <div class="grid">
+          <label>
+            Erwarteter Stamm
+            <input id="expectedStem" value="trah" />
+          </label>
+          <label>
+            Erwartete Endung
+            <input id="expectedSuffix" value="ere" />
+          </label>
+          <label class="full">
+            Nutzerantwort
+            <input id="userAnswer" value="traheere" />
+          </label>
+        </div>
+        <button id="evaluateButton" class="button">Antwort auswerten</button>
+        <pre id="output"></pre>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Latein Sprint App - GitHub Pages Deployment</p>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

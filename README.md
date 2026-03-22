@@ -33,6 +33,17 @@ So wird Leistung sichtbar gemacht, auch wenn ein Wort noch nicht perfekt geschri
 node --test tests/smartCorrection.test.js
 ```
 
+## GitHub Pages Deployment
+
+Die statische Demo-Seite liegt in `site/` und wird ueber GitHub Actions automatisch nach GitHub Pages deployed:
+
+- Workflow: `.github/workflows/deploy-pages.yml`
+- Trigger: Push auf `main` oder `cursor/app-konzept-datenmodell-cf88`
+
+Erwartete URL nach erfolgreichem Deployment:
+
+`https://issagithub.github.io/Latein-/`
+
 ## Tech-Entscheidung (Empfehlung)
 
 - **Mobile Frontend**: Flutter oder React Native (Animationen, Cross-Platform)
