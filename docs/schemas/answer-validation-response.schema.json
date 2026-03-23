@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://latein-sprint.app/schemas/answer-validation-response.schema.json",
+  "title": "AnswerValidationResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "isCorrect",
+    "reasonCode",
+    "normalizedAnswer",
+    "resolvedCanonicalForm",
+    "usedAiCandidate",
+    "feedback",
+    "audit"
+  ],
+  "properties": {
+    "isCorrect": {
+      "type": "boolean"
+    },
+    "reasonCode": {
+      "type": "string",
+      "enum": [
+        "verified_form_match",
+        "verified_ai_candidate",
+        "no_verified_match",
+        "missing_verified_forms"
+      ]
+    },
+    "normalizedAnswer": {
+      "type": "string"
+    },
+    "resolvedCanonicalForm": {
+      "type": "string"
+    },
+    "usedAiCandidate": {
+      "type": "boolean"
+    },
+    "feedback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "learnerMessage",
+        "teacherNote"
+      ],
+      "properties": {
+        "learnerMessage": {
+          "type": "string"
+        },
+        "teacherNote": {
+          "type": "string"
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lemma",
+        "verifiedForms",
+        "aiCandidateAccepted",
+        "sources"
+      ],
+      "properties": {
+        "lemma": {
+          "type": "string"
+        },
+        "verifiedForms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "aiCandidateAccepted": {
+          "type": "boolean"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "lexicon",
+              "rules",
+              "irregular_override",
+              "ai_hint"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}
+

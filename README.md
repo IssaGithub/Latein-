@@ -23,14 +23,25 @@ So wird Leistung sichtbar gemacht, auch wenn ein Wort noch nicht perfekt geschri
 ## Projektstruktur
 
 - `docs/architecture.md`: User Flow, Feature-Architektur, API-Konzept
+- `docs/latin-validation-api.md`: konkrete API-Architektur fuer "nur verifizierte korrekte Antworten"
+- `docs/schemas/*.json`: JSON-Schemas + Beispielpayload fuer Answer-Validation
 - `db/schema.sql`: Relationales Datenmodell inkl. SRS und LRS-Fehlerklassifikation
 - `src/smartCorrection.js`: Referenzimplementierung des LRS-freundlichen Korrektur-Algorithmus
+- `src/latinValidationFlow.js`: Referenz-Flow fuer API-Validierung mit harter Verifikations-Policy
 - `tests/smartCorrection.test.js`: Unit-Tests fuer die Bewertungslogik
+- `tests/latinValidationFlow.test.js`: Unit-Tests fuer den API-Validierungs-Flow
+- `tests/appVerbProfiles.test.js`: Regressionstests fuer Verbprofile in der Pages-App
 
 ## Schnellstart (Algorithmus-Tests)
 
 ```bash
 node --test tests/smartCorrection.test.js
+```
+
+Alle Tests:
+
+```bash
+node --test tests/*.test.js
 ```
 
 ## GitHub Pages Deployment
