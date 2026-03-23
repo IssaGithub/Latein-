@@ -8,76 +8,75 @@
   </head>
   <body>
     <header class="hero">
-      <p class="label">MVP - Daily Sprint mit LRS-Filter</p>
+      <p class="label">5-Minuten Lern-Run</p>
       <h1>Latein Sprint App</h1>
       <p>
-        Diese Version ist als nutzbare App aufgebaut: Onboarding, 3 Sprint-Phasen,
-        motivierendes Feedback, Denare und Bild-Upload zu neuen Aufgaben.
+        Kurz trainieren, Punkte sammeln, besser werden: in 3 schnellen Runden
+        uebst du Latein ohne Stress und bekommst direkt motivierendes Feedback.
       </p>
       <div class="stats">
         <span class="chip">Denare: <strong id="denarsStat">0</strong></span>
         <span class="chip">Streak: <strong id="streakStat">0</strong></span>
-        <span class="chip">Stabilitaet: <strong id="stabilityStat">0.00</strong></span>
+        <span class="chip">Lernlevel: <strong id="stabilityStat">0.00</strong></span>
       </div>
     </header>
 
     <main class="container">
       <section class="card">
-        <h2>1) Onboarding & Check-in</h2>
+        <h2>1) Dein Check-in</h2>
         <div class="grid">
           <label>
             Name
             <input id="nameInput" value="Schueler" />
           </label>
           <label>
-            Schulbuch
+            Buch
             <input id="bookInput" value="Campus C" />
           </label>
           <label>
-            Lektion
+            Kapitel / Lektion
             <input id="lessonInput" type="number" value="7" min="1" />
           </label>
           <label>
-            Sprint-Woerter
+            Challenge-Groesse
             <select id="sprintWordCount">
-              <option value="2">2 Woerter (6 Aufgaben)</option>
-              <option value="3" selected>3 Woerter (9 Aufgaben)</option>
-              <option value="4">4 Woerter (12 Aufgaben)</option>
+              <option value="2">2 Woerter (easy, 6 Aufgaben)</option>
+              <option value="3" selected>3 Woerter (normal, 9 Aufgaben)</option>
+              <option value="4">4 Woerter (pro, 12 Aufgaben)</option>
             </select>
           </label>
         </div>
-        <button id="startSprintButton" type="button" class="button">Daily Sprint starten</button>
+        <button id="startSprintButton" type="button" class="button">Challenge starten</button>
       </section>
 
       <section class="card hidden" id="sprintCard">
-        <h2>2) Daily Sprint</h2>
-        <p id="sprintMeta">Noch kein Sprint gestartet.</p>
+        <h2>2) Dein Lern-Run</h2>
+        <p id="sprintMeta">Noch kein Run gestartet.</p>
         <div id="taskContainer"></div>
         <div class="actions">
-          <button id="submitAnswerButton" type="button" class="button">Antwort pruefen</button>
-          <button id="nextTaskButton" type="button" class="button secondary hidden">Naechste Aufgabe</button>
+          <button id="submitAnswerButton" type="button" class="button">Antwort checken</button>
+          <button id="nextTaskButton" type="button" class="button secondary hidden">Weiter</button>
         </div>
       </section>
 
       <section class="card hidden" id="feedbackCard">
-        <h2>3) Intelligente Korrektur (LRS-Filter)</h2>
+        <h2>3) Dein Feedback</h2>
         <pre id="feedbackOutput"></pre>
       </section>
 
       <section class="card">
-        <h2>4) Bild-Upload -> Aufgabenpool</h2>
+        <h2>4) Foto rein -> neue Woerter</h2>
         <p>
-          Lade ein Buchbild hoch und lies den Text direkt mit Tesseract.js (OCR) aus.
-          Erkannte Paare werden als <code>Latein - Deutsch</code> vorbefuellt und
-          koennen dann in den Sprint-Pool importiert werden.
+          Mach ein Foto von deiner Buchseite. Die App liest den Text
+          automatisch und fuellt moegliche Vokabelpaare vor.
         </p>
         <div class="grid">
           <label class="full">
-            Bilddatei
+            Dein Foto
             <input id="imageInput" type="file" accept="image/*" />
           </label>
           <label class="full">
-            Erkannte Vokabeln (eine Zeile pro Paar)
+            Erkannte Woerter (pro Zeile: Latein - Deutsch)
             <textarea
               id="vocabPairsInput"
               rows="6"
@@ -87,9 +86,9 @@
         </div>
         <div class="actions">
           <button id="ocrFromImageButton" type="button" class="button secondary">
-            Text aus Bild lesen (OCR)
+            Text aus Foto holen
           </button>
-          <button id="importImageVocabButton" type="button" class="button">Vokabeln importieren</button>
+          <button id="importImageVocabButton" type="button" class="button">In Challenge packen</button>
         </div>
         <p id="ocrStatus" class="muted"></p>
         <progress id="ocrProgress" class="progress hidden" max="1" value="0"></progress>
@@ -100,10 +99,10 @@
     </main>
 
     <footer class="footer">
-      <p>Latein Sprint App - GitHub Pages MVP</p>
+      <p>Latein Sprint App - Schueler Edition</p>
       <p id="runtimeStatus" class="muted"></p>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <script src="./app.js?v=20260323-2"></script>
+    <script src="./app.js?v=20260323-3"></script>
   </body>
 </html>

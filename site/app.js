@@ -123,14 +123,14 @@ function evaluateAnswer(expectedStem, expectedSuffix, userAnswer) {
   else if (grammarCorrect) denars = 5;
   else if (!grammarCorrect && stemDistance <= 1) denars = 3;
 
-  let feedback = "Guter Versuch. Schau dir Stamm und Endung getrennt an.";
+  let feedback = "Guter Versuch! Schau dir Wortanfang und Endung nochmal getrennt an.";
   if (grammarCorrect && stemDistance === 0) {
-    feedback = "Perfekt! Grammatik und Schreibweise sind korrekt.";
+    feedback = "Stark! Alles richtig.";
   } else if (grammarCorrect && stemDistance <= 1) {
     feedback =
-      "Die Grammatik hast du perfekt verstanden. Beim Stamm ist nur ein kleiner Fehler.";
+      "Mega! Die Endung passt. Beim Wortanfang fehlt nur ein kleiner Buchstaben-Feinschliff.";
   } else if (!grammarCorrect && stemDistance === 0) {
-    feedback = `Der Stamm ist richtig. Pruefe die Endung "${suffix}" noch einmal.`;
+    feedback = `Wortanfang passt! Check die Endung "${suffix}" nochmal.`;
   }
 
   return {
@@ -174,7 +174,7 @@ function saveState() {
     setRuntimeStatus("");
   } catch {
     setRuntimeStatus(
-      "Hinweis: Lokales Speichern ist im Browser blockiert. Die Buttons funktionieren, aber Fortschritt wird nicht gespeichert.",
+      "Dein Browser blockiert Speichern. Du kannst trotzdem spielen, aber dein Fortschritt bleibt nicht dauerhaft.",
       true
     );
   }
@@ -218,7 +218,7 @@ function buildWordCycleTask(entry, phase, index, pool) {
     return {
       id: `${formKey}::A::${index}`,
       phase,
-      title: "Phase A - Erkennen",
+      title: "Runde A - Erkennen",
       prompt: `Was bedeutet "${entry.lemma}"?`,
       formKey,
       expectedWord,
@@ -226,7 +226,7 @@ function buildWordCycleTask(entry, phase, index, pool) {
       expectedSuffix: chosenSuffix.suffix,
       options,
       correctAnswer: entry.meaning,
-      helper: `${entry.emoji} Audio + Wort erkannt`,
+      helper: `${entry.emoji} Tipp: Geh nach Bedeutung und Gefuehl.`,
       colorCode: chosenSuffix.colorCode,
       functionLabel: chosenSuffix.functionLabel,
     };
@@ -239,8 +239,8 @@ function buildWordCycleTask(entry, phase, index, pool) {
     return {
       id: `${formKey}::B::${index}`,
       phase,
-      title: "Phase B - Struktur",
-      prompt: `Waehle die passende Endung fuer Stamm "${entry.stem}-"`,
+      title: "Runde B - Endung-Check",
+      prompt: `Welche Endung passt zu "${entry.stem}-"?`,
       formKey,
       expectedWord,
       expectedStem: entry.stem,
@@ -256,8 +256,8 @@ function buildWordCycleTask(entry, phase, index, pool) {
   return {
     id: `${formKey}::C::${index}`,
     phase,
-    title: "Phase C - Produktion",
-    prompt: `Schreibe die Form zu "${entry.lemma}" (${chosenSuffix.functionLabel}).`,
+    title: "Runde C - Selber schreiben",
+    prompt: `Schreib die passende Form zu "${entry.lemma}" (${chosenSuffix.functionLabel}).`,
     formKey,
     expectedWord,
     expectedStem: entry.stem,
@@ -271,7 +271,7 @@ function buildWordCycleTask(entry, phase, index, pool) {
 function startSprint() {
   const pool = fullVocabulary();
   if (pool.length < 2) {
-    alert("Bitte zuerst mindestens 2 Vokabeln im Pool haben.");
+    alert("Bitte erst mindestens 2 Woerter im Pool haben.");
     return;
   }
 
@@ -335,7 +335,7 @@ function gradeCurrentTask() {
   } else {
     const selected = sprint.selectedOption;
     if (!selected) {
-      alert("Bitte eine Option auswaehlen.");
+      alert("Waehle zuerst eine Antwort aus.");
       return;
     }
     const isCorrect = selected === task.correctAnswer;
@@ -346,8 +346,8 @@ function gradeCurrentTask() {
       errorType: isCorrect ? "none" : task.phase === "structure" ? "grammar" : "mixed",
       denars: isCorrect ? 5 : 2,
       feedback: isCorrect
-        ? "Sehr gut! Diese Phase hast du richtig geloest."
-        : "Fast. Versuche es noch einmal und achte auf die Struktur.",
+        ? "Yes! Das war richtig."
+        : "Knapp vorbei - probier es nochmal.",
     };
   }
 
@@ -382,7 +382,7 @@ function nextTask() {
   if (sprint.taskIndex >= sprint.tasks.length) {
     const total = sprint.tasks.length;
     state.activeSprint = null;
-    alert(`Sprint abgeschlossen! Du hast ${total} Aufgaben geschafft.`);
+    alert(`Stark! Dein Run ist fertig: ${total} Aufgaben geschafft.`);
   }
 
   saveState();
@@ -398,11 +398,11 @@ function averageStability() {
 
 function renderTask(task, sprint) {
   if (!task) {
-    taskContainer.innerHTML = "<p class='muted'>Starte einen Sprint, um Aufgaben zu sehen.</p>";
+    taskContainer.innerHTML = "<p class='muted'>Starte eine Challenge, um Aufgaben zu sehen.</p>";
     return;
   }
 
-  sprintMeta.textContent = `${state.profile.name} | ${state.profile.schoolBook} Lektion ${state.profile.lesson} | Aufgabe ${sprint.taskIndex + 1}/${sprint.tasks.length}`;
+  sprintMeta.textContent = `${state.profile.name} | ${state.profile.schoolBook} Lektion ${state.profile.lesson} | Run ${sprint.taskIndex + 1}/${sprint.tasks.length}`;
 
   const colorBadge = `<span class="badge" style="background:${task.colorCode}33;color:#e2e8f0">${escapeHtml(task.functionLabel)}</span>`;
   if (task.phase === "production") {
@@ -446,15 +446,31 @@ function renderFeedback() {
   const sprint = state.activeSprint;
   const evaluation = sprint?.lastEvaluation;
   if (!evaluation) {
-    feedbackOutput.textContent = "Noch keine Auswertung vorhanden.";
+    feedbackOutput.textContent = "Nach deiner Antwort erscheint hier dein Feedback.";
     return;
   }
-  feedbackOutput.textContent = JSON.stringify(evaluation, null, 2);
+  const points = evaluation.evaluation.denars || 0;
+  const errorType = evaluation.evaluation.errorType || "none";
+  const badge =
+    errorType === "none"
+      ? "Top"
+      : errorType === "spelling"
+      ? "Fast richtig"
+      : errorType === "grammar"
+      ? "Endung nochmal checken"
+      : "Nochmal probieren";
+
+  feedbackOutput.textContent = [
+    `Ergebnis: ${badge}`,
+    `Punkte: +${points} Denare`,
+    `Feedback: ${evaluation.evaluation.feedback}`,
+    `Zielwort: ${evaluation.expected}`,
+  ].join("\n");
 }
 
 function renderImportedList() {
   if (state.uploadedVocabulary.length === 0) {
-    importedList.innerHTML = "<li class='muted'>Noch keine importierten Vokabeln.</li>";
+    importedList.innerHTML = "<li class='muted'>Noch keine extra Woerter importiert.</li>";
     return;
   }
   importedList.innerHTML = state.uploadedVocabulary
@@ -477,7 +493,7 @@ function renderAll() {
   if (!state.activeSprint) {
     sprintCard.classList.add("hidden");
     feedbackCard.classList.add("hidden");
-    sprintMeta.textContent = "Noch kein Sprint gestartet.";
+    sprintMeta.textContent = "Noch kein Run gestartet.";
   } else {
     sprintCard.classList.remove("hidden");
     submitAnswerButton.classList.remove("hidden");
@@ -582,17 +598,26 @@ function setButtonBusy(button, busy) {
   button.style.cursor = busy ? "wait" : "";
 }
 
+function friendlyOcrStatus(status) {
+  const value = String(status || "").toLowerCase();
+  if (value.includes("loading")) return "Lade Sprachdaten";
+  if (value.includes("initializing")) return "Starte Texterkennung";
+  if (value.includes("recognizing")) return "Erkenne Text";
+  if (value.includes("detecting")) return "Suche Textbereiche";
+  return "Arbeite am Foto";
+}
+
 async function runImageOcr() {
   if (!imageInput || !vocabPairsInput || !ocrStatus) return;
   const file = imageInput.files?.[0];
   if (!file) {
-    ocrStatus.textContent = "Bitte zuerst ein Bild aus dem Buch auswaehlen.";
+    ocrStatus.textContent = "Waehle zuerst ein Foto aus.";
     return;
   }
 
   if (!window.Tesseract || typeof window.Tesseract.recognize !== "function") {
     ocrStatus.textContent =
-      "Tesseract.js konnte nicht geladen werden. Bitte Internetverbindung pruefen und Seite neu laden.";
+      "Das Lesen aus dem Foto konnte nicht geladen werden. Bitte kurz neu laden.";
     return;
   }
 
@@ -606,16 +631,18 @@ async function runImageOcr() {
     ocrProgress.value = 0;
     ocrProgress.classList.remove("hidden");
   }
-  ocrStatus.textContent = "OCR gestartet...";
+  ocrStatus.textContent = "Ich lese dein Foto...";
 
   for (const language of languageFallbacks) {
     try {
-      ocrStatus.textContent = `OCR laeuft (${language})...`;
+      ocrStatus.textContent = `Foto wird gelesen (${language})...`;
       const result = await window.Tesseract.recognize(file, language, {
         logger: (message) => {
           if (message.status && typeof message.progress === "number") {
             if (ocrProgress) ocrProgress.value = message.progress;
-            ocrStatus.textContent = `${message.status} (${Math.round(message.progress * 100)}%)`;
+            ocrStatus.textContent = `${friendlyOcrStatus(message.status)} (${Math.round(
+              message.progress * 100
+            )}%)`;
           }
         },
       });
@@ -632,7 +659,7 @@ async function runImageOcr() {
 
   if (!resultText) {
     ocrStatus.textContent =
-      "Kein Text erkannt. Bitte schaerferes Bild probieren oder Vokabeln manuell eingeben.";
+      "Ich konnte kaum Text erkennen. Probier ein schaerferes Foto oder trag die Woerter unten kurz selbst ein.";
     if (lastError) console.error(lastError);
     return;
   }
@@ -640,13 +667,13 @@ async function runImageOcr() {
   const pairs = parseVocabularyPairsFromText(resultText);
   if (pairs.length === 0) {
     ocrStatus.textContent =
-      `OCR fertig (${selectedLanguage}), aber keine Paare im Format Latein - Deutsch erkannt. Bitte Ergebnis manuell anpassen.`;
+      `Text erkannt (${selectedLanguage}), aber noch keine klaren Wortpaare gefunden. Du kannst unten kurz nachbessern.`;
     vocabPairsInput.value = resultText.trim();
     return;
   }
 
   vocabPairsInput.value = pairs.map((pair) => `${pair.latin} - ${pair.german}`).join("\n");
-  ocrStatus.textContent = `OCR fertig (${selectedLanguage}): ${pairs.length} Vokabelpaare erkannt. Jetzt "Vokabeln importieren" klicken.`;
+  ocrStatus.textContent = `Nice! ${pairs.length} Wortpaare erkannt (${selectedLanguage}). Jetzt auf "In Challenge packen" klicken.`;
 }
 
 const denarsStat = document.getElementById("denarsStat");
@@ -694,7 +721,7 @@ function bindClick(element, handler) {
       .catch((error) => {
       console.error(error);
       setRuntimeStatus(
-        "Ein Laufzeitfehler ist aufgetreten. Bitte Seite neu laden (Strg+F5).",
+        "Ups, da lief etwas schief. Bitte Seite neu laden (Strg+F5).",
         true
       );
       });
@@ -718,7 +745,7 @@ if (imageInput && imagePreview) {
     imagePreview.src = URL.createObjectURL(file);
     imagePreview.classList.remove("hidden");
     if (ocrStatus) {
-      ocrStatus.textContent = "Bild geladen. Optional: 'Text aus Bild lesen (OCR)' starten.";
+      ocrStatus.textContent = "Foto geladen. Wenn du magst: 'Text aus Foto holen'.";
     }
   });
 }
@@ -727,12 +754,12 @@ bindClick(importImageVocabButton, () => {
   const lines = vocabPairsInput.value.split("\n");
   const imported = buildImportedVocabulary(lines);
   if (imported.length === 0) {
-    importStatus.textContent = "Keine gueltigen Zeilen erkannt. Format: Latein - Deutsch";
+    importStatus.textContent = "Ich konnte keine gueltigen Zeilen finden. Nutze: Latein - Deutsch";
     return;
   }
 
   state.uploadedVocabulary.push(...imported);
-  importStatus.textContent = `${imported.length} Vokabeln aus dem Bild-Input importiert.`;
+  importStatus.textContent = `${imported.length} neue Woerter in deine Challenge gepackt!`;
   vocabPairsInput.value = "";
   saveState();
   renderAll();
@@ -742,7 +769,7 @@ if (ocrFromImageButton && (!window.Tesseract || typeof window.Tesseract.recogniz
   ocrFromImageButton.disabled = true;
   if (ocrStatus) {
     ocrStatus.textContent =
-      "OCR-Bibliothek noch nicht verfuegbar. Bitte Seite neu laden oder Internetverbindung pruefen.";
+      "Foto-Text-Reader ist gerade nicht verfuegbar. Bitte kurz neu laden.";
   }
 }
 
@@ -751,7 +778,7 @@ try {
 } catch (error) {
   console.error(error);
   setRuntimeStatus(
-    "Die App konnte nicht initialisiert werden. Bitte Seite neu laden (Strg+F5).",
+    "Die App konnte nicht starten. Bitte Seite neu laden (Strg+F5).",
     true
   );
 }
