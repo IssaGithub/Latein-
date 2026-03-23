@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://latein-sprint.app/schemas/answer-validation-request.schema.json",
+  "title": "AnswerValidationRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lemma",
+    "userAnswer",
+    "canonicalForm",
+    "acceptedForms",
+    "taskContext"
+  ],
+  "properties": {
+    "lemma": {
+      "type": "string",
+      "minLength": 1
+    },
+    "userAnswer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "canonicalForm": {
+      "type": "string",
+      "minLength": 1
+    },
+    "acceptedForms": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "taskContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "taskId",
+        "phase",
+        "book",
+        "lesson"
+      ],
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "phase": {
+          "type": "string",
+          "enum": [
+            "recognition",
+            "structure",
+            "production",
+            "practice-write"
+          ]
+        },
+        "book": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lesson": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "aiHintsEnabled": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}
+

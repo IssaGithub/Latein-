@@ -1,0 +1,40 @@
+{
+  "request": {
+    "lemma": "capere",
+    "userAnswer": "capio",
+    "canonicalForm": "capio",
+    "acceptedForms": [
+      "capio"
+    ],
+    "taskContext": {
+      "taskId": "campus2-l6-capere-0::io::C::0",
+      "phase": "production",
+      "book": "Campus 2",
+      "lesson": 6
+    },
+    "aiHintsEnabled": true
+  },
+  "response": {
+    "isCorrect": true,
+    "reasonCode": "verified_form_match",
+    "normalizedAnswer": "capio",
+    "resolvedCanonicalForm": "capio",
+    "usedAiCandidate": false,
+    "feedback": {
+      "learnerMessage": "Stark! Diese Form ist korrekt.",
+      "teacherNote": "Direkter Treffer auf verifizierte Form."
+    },
+    "audit": {
+      "lemma": "capere",
+      "verifiedForms": [
+        "capio"
+      ],
+      "aiCandidateAccepted": false,
+      "sources": [
+        "lexicon",
+        "rules"
+      ]
+    }
+  }
+}
+
