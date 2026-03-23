@@ -46,7 +46,7 @@ test("KI-Kandidat wird akzeptiert, wenn hoch-konfident und verifiziert", async (
   const result = await validateAnswerWithPolicy(
     {
       lemma: "malo",
-      userAnswer: "mavis",
+      userAnswer: "mavs",
       canonicalForm: "mavis",
       acceptedForms: ["ma vis", "mavis"],
     },
