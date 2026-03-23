@@ -23,6 +23,15 @@
 
     <main class="container">
       <section class="card">
+        <h2>Modus waehlen</h2>
+        <div class="tab-row">
+          <button id="tabChallenge" type="button" class="tab-button active">Challenge</button>
+          <button id="tabPractice" type="button" class="tab-button">Uebungen</button>
+        </div>
+        <p id="tabDescription" class="muted">Challenge: 3 Runden mit Punkten und Feedback.</p>
+      </section>
+
+      <section class="card">
         <h2>1) Dein Check-in</h2>
         <div class="grid">
           <label>
@@ -45,58 +54,86 @@
               <option value="4">4 Woerter (pro, 12 Aufgaben)</option>
             </select>
           </label>
+          <label>
+            Uebungs-Groesse
+            <select id="practiceWordCount">
+              <option value="2">2 Woerter (kurz)</option>
+              <option value="3" selected>3 Woerter (standard)</option>
+              <option value="4">4 Woerter (intensiv)</option>
+            </select>
+          </label>
         </div>
-        <button id="startSprintButton" type="button" class="button">Challenge starten</button>
+        <div class="actions">
+          <button id="startSprintButton" type="button" class="button">Challenge starten</button>
+          <button id="startPracticeButton" type="button" class="button secondary">Uebungen starten</button>
+        </div>
         <p id="lessonPoolHint" class="muted"></p>
       </section>
 
-      <section class="card hidden" id="sprintCard">
-        <h2>2) Dein Lern-Run</h2>
-        <p id="sprintMeta">Noch kein Run gestartet.</p>
-        <div id="taskContainer"></div>
-        <div class="actions">
-          <button id="submitAnswerButton" type="button" class="button">Antwort checken</button>
-          <button id="nextTaskButton" type="button" class="button secondary hidden">Weiter</button>
-        </div>
-      </section>
+      <div id="challengePanel">
+        <section class="card hidden" id="sprintCard">
+          <h2>2) Dein Lern-Run</h2>
+          <p id="sprintMeta">Noch kein Run gestartet.</p>
+          <div id="taskContainer"></div>
+          <div class="actions">
+            <button id="submitAnswerButton" type="button" class="button">Antwort checken</button>
+            <button id="nextTaskButton" type="button" class="button secondary hidden">Weiter</button>
+          </div>
+        </section>
 
-      <section class="card hidden" id="feedbackCard">
-        <h2>3) Dein Feedback</h2>
-        <pre id="feedbackOutput"></pre>
-      </section>
+        <section class="card hidden" id="feedbackCard">
+          <h2>3) Dein Feedback</h2>
+          <pre id="feedbackOutput"></pre>
+        </section>
+      </div>
 
-      <section class="card">
-        <h2>4) Foto rein -> neue Woerter</h2>
-        <p>
-          Mach ein Foto von deiner Buchseite. Die App liest den Text
-          automatisch und fuellt moegliche Vokabelpaare vor.
-        </p>
-        <div class="grid">
-          <label class="full">
-            Dein Foto
-            <input id="imageInput" type="file" accept="image/*" />
-          </label>
-          <label class="full">
-            Erkannte Woerter (pro Zeile: Latein - Deutsch)
-            <textarea
-              id="vocabPairsInput"
-              rows="6"
-              placeholder="amare - lieben&#10;videre - sehen"
-            ></textarea>
-          </label>
-        </div>
-        <div class="actions">
-          <button id="ocrFromImageButton" type="button" class="button secondary">
-            Text aus Foto holen
-          </button>
-          <button id="importImageVocabButton" type="button" class="button">In Challenge packen</button>
-        </div>
-        <p id="ocrStatus" class="muted"></p>
-        <progress id="ocrProgress" class="progress hidden" max="1" value="0"></progress>
-        <img id="imagePreview" class="preview hidden" alt="Bildvorschau" />
-        <p id="importStatus" class="muted"></p>
-        <ul id="importedList" class="import-list"></ul>
-      </section>
+      <div id="practicePanel" class="hidden">
+        <section class="card">
+          <h2>2) Buch-Scan fuer Uebungen</h2>
+          <p>
+            Im Uebungs-Reiter trainierst du zuerst mit Aufgaben aus deinem Buch-Scan.
+            Foto machen -> Text holen -> importieren -> Uebungen starten.
+          </p>
+          <div class="grid">
+            <label class="full">
+              Dein Foto
+              <input id="imageInput" type="file" accept="image/*" />
+            </label>
+            <label class="full">
+              Erkannte Woerter (pro Zeile: Latein - Deutsch)
+              <textarea
+                id="vocabPairsInput"
+                rows="6"
+                placeholder="amare - lieben&#10;videre - sehen"
+              ></textarea>
+            </label>
+          </div>
+          <div class="actions">
+            <button id="ocrFromImageButton" type="button" class="button secondary">
+              Text aus Foto holen
+            </button>
+            <button id="importImageVocabButton" type="button" class="button">
+              In Uebungen & Challenge packen
+            </button>
+          </div>
+          <p id="ocrStatus" class="muted"></p>
+          <progress id="ocrProgress" class="progress hidden" max="1" value="0"></progress>
+          <img id="imagePreview" class="preview hidden" alt="Bildvorschau" />
+          <p id="importStatus" class="muted"></p>
+          <ul id="importedList" class="import-list"></ul>
+        </section>
+
+        <section class="card hidden" id="practiceCard">
+          <h2>3) Deine Uebungen aus dem Scan</h2>
+          <p id="practiceMeta">Noch keine Uebung gestartet.</p>
+          <div id="practiceTaskContainer"></div>
+          <div class="actions">
+            <button id="submitPracticeButton" type="button" class="button">Antwort checken</button>
+            <button id="nextPracticeButton" type="button" class="button secondary hidden">Weiter</button>
+          </div>
+          <pre id="practiceFeedbackOutput">Nach deiner Antwort erscheint hier dein Uebungs-Feedback.</pre>
+        </section>
+      </div>
     </main>
 
     <footer class="footer">
@@ -104,6 +141,6 @@
       <p id="runtimeStatus" class="muted"></p>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <script src="./app.js?v=20260323-5"></script>
+    <script src="./app.js?v=20260323-6"></script>
   </body>
 </html>

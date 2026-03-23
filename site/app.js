@@ -428,6 +428,10 @@ function defaultState() {
     lessonVocabulary: {},
     uploadedVocabulary: [],
     activeSprint: null,
+    activePractice: null,
+    ui: {
+      activeTab: "challenge",
+    },
   };
 }
 
@@ -447,6 +451,15 @@ if (!state.lessonVocabulary || typeof state.lessonVocabulary !== "object") {
 }
 if (!Array.isArray(state.uploadedVocabulary)) {
   state.uploadedVocabulary = [];
+}
+if (!state.ui || typeof state.ui !== "object") {
+  state.ui = { activeTab: "challenge" };
+}
+if (!state.ui.activeTab) {
+  state.ui.activeTab = "challenge";
+}
+if (!state.activePractice || typeof state.activePractice !== "object") {
+  state.activePractice = null;
 }
 
 if (
@@ -599,6 +612,141 @@ function startSprint() {
     bookName: state.profile.schoolBook,
     lessonNumber: state.profile.lesson,
   };
+  state.ui.activeTab = "challenge";
+
+  saveState();
+  renderAll();
+}
+
+function buildPracticeTasks(scannedPool, practiceWordCount) {
+  const chosenEntries = sample(scannedPool, Math.min(practiceWordCount, scannedPool.length));
+  const tasks = [];
+
+  chosenEntries.forEach((entry, index) => {
+    const distractors = sample(
+      scannedPool.filter((item) => item.id !== entry.id).map((item) => item.meaning),
+      3
+    );
+    const options = shuffle([entry.meaning, ...distractors]);
+    tasks.push({
+      id: `practice-meaning-${entry.id}-${index}`,
+      kind: "meaning",
+      formKey: `${entry.id}::meaning`,
+      title: "Uebung 1 - Bedeutung",
+      prompt: `Was bedeutet "${entry.lemma}"?`,
+      options,
+      correctAnswer: entry.meaning,
+      helper: `${entry.emoji} Aus dem Buch-Scan`,
+    });
+
+    const suffix = entry.suffixes[Math.floor(Math.random() * entry.suffixes.length)];
+    const expectedWord = `${entry.stem}${suffix.suffix}`;
+    tasks.push({
+      id: `practice-write-${entry.id}-${index}`,
+      kind: "write",
+      formKey: `${entry.id}::${suffix.suffix}`,
+      title: "Uebung 2 - Schreiben",
+      prompt: `Schreib die Form zu "${entry.lemma}" (${suffix.functionLabel}).`,
+      helper: `Stamm: ${entry.stem}- | Endung: ${suffix.suffix}`,
+      expectedStem: entry.stem,
+      expectedSuffix: suffix.suffix,
+      expectedWord,
+      colorCode: suffix.colorCode,
+      functionLabel: suffix.functionLabel,
+    });
+  });
+
+  return tasks;
+}
+
+function startPractice() {
+  state.profile.name = nameInput.value.trim() || "Schueler";
+  state.profile.schoolBook = getSelectedBookName();
+  state.profile.lesson = getSelectedLessonNumber();
+
+  const scannedPool = getLessonVocabularyFromUser(state.profile.schoolBook, state.profile.lesson);
+  if (scannedPool.length < 2) {
+    alert(
+      "Fuer Uebungen brauchst du erst Woerter aus dem Buch-Scan. Wechsle in den Uebungs-Reiter, scanne und importiere."
+    );
+    state.ui.activeTab = "practice";
+    saveState();
+    renderAll();
+    return;
+  }
+
+  const practiceWordCount = Number(practiceWordCountSelect?.value || 3);
+  const tasks = buildPracticeTasks(scannedPool, practiceWordCount);
+  state.activePractice = {
+    startedAt: new Date().toISOString(),
+    taskIndex: 0,
+    tasks,
+    selectedOption: null,
+    lastEvaluation: null,
+    bookName: state.profile.schoolBook,
+    lessonNumber: state.profile.lesson,
+  };
+  state.ui.activeTab = "practice";
+  saveState();
+  renderAll();
+}
+
+function gradePracticeTask() {
+  const practice = state.activePractice;
+  if (!practice) return;
+  const task = practice.tasks[practice.taskIndex];
+  if (!task) return;
+
+  let evaluation;
+  if (task.kind === "meaning") {
+    const selected = practice.selectedOption;
+    if (!selected) {
+      alert("Waehle zuerst eine Antwort aus.");
+      return;
+    }
+    const isCorrect = selected === task.correctAnswer;
+    evaluation = {
+      isCorrect,
+      errorType: isCorrect ? "none" : "mixed",
+      denars: isCorrect ? 4 : 1,
+      feedback: isCorrect ? "Stark! Bedeutung korrekt." : "Fast - lies das Wort nochmal genau.",
+    };
+  } else {
+    const input = (document.getElementById("practiceWriteInput")?.value || "").trim();
+    evaluation = evaluateAnswer(task.expectedStem, task.expectedSuffix, input);
+    updateProgress(task.formKey, evaluation);
+  }
+
+  state.wallet.denars += evaluation.denars;
+  if (evaluation.errorType === "none") state.wallet.streak += 1;
+  else state.wallet.streak = 0;
+
+  practice.lastEvaluation = {
+    taskId: task.id,
+    kind: task.kind,
+    evaluation,
+    expected: task.expectedWord || task.correctAnswer,
+  };
+
+  submitPracticeButton.classList.add("hidden");
+  nextPracticeButton.classList.remove("hidden");
+  saveState();
+  renderAll();
+}
+
+function nextPracticeTask() {
+  const practice = state.activePractice;
+  if (!practice) return;
+
+  practice.taskIndex += 1;
+  practice.selectedOption = null;
+  practice.lastEvaluation = null;
+
+  if (practice.taskIndex >= practice.tasks.length) {
+    const total = practice.tasks.length;
+    state.activePractice = null;
+    alert(`Uebung geschafft! Du hast ${total} Scan-Aufgaben trainiert.`);
+  }
 
   saveState();
   renderAll();
@@ -744,6 +892,79 @@ function renderTask(task, sprint) {
   });
 }
 
+function renderPracticeTask(practice) {
+  const task = practice?.tasks?.[practice.taskIndex];
+  if (!task) {
+    practiceTaskContainer.innerHTML =
+      "<p class='muted'>Starte Uebungen, um Scan-Aufgaben zu sehen.</p>";
+    return;
+  }
+
+  practiceMeta.textContent = `${state.profile.name} | ${state.profile.schoolBook} Lektion ${state.profile.lesson} | Uebung ${
+    practice.taskIndex + 1
+  }/${practice.tasks.length}`;
+
+  if (task.kind === "write") {
+    const colorBadge = `<span class="badge" style="background:${task.colorCode}33;color:#e2e8f0">${escapeHtml(
+      task.functionLabel
+    )}</span>`;
+    practiceTaskContainer.innerHTML = `
+      <h3 class="task-title">${task.title} ${colorBadge}</h3>
+      <p>${escapeHtml(task.prompt)}</p>
+      <p class="muted">${escapeHtml(task.helper)}</p>
+      <label>
+        Deine Antwort
+        <input id="practiceWriteInput" autocomplete="off" placeholder="z. B. ${escapeHtml(
+          task.expectedWord
+        )}" />
+      </label>
+    `;
+    return;
+  }
+
+  const optionsHtml = task.options
+    .map((option, optionIndex) => {
+      const active = practice.selectedOption === option ? "active" : "";
+      return `<button type="button" class="option-button ${active}" data-practice-option-index="${optionIndex}">${escapeHtml(
+        option
+      )}</button>`;
+    })
+    .join("");
+
+  practiceTaskContainer.innerHTML = `
+    <h3 class="task-title">${task.title}</h3>
+    <p>${escapeHtml(task.prompt)}</p>
+    <p class="muted">${escapeHtml(task.helper)}</p>
+    <div class="option-grid">${optionsHtml}</div>
+  `;
+
+  Array.from(practiceTaskContainer.querySelectorAll(".option-button")).forEach((button) => {
+    button.addEventListener("click", () => {
+      const optionIndex = Number(button.dataset.practiceOptionIndex);
+      practice.selectedOption = task.options[optionIndex] || null;
+      saveState();
+      renderAll();
+    });
+  });
+}
+
+function renderPracticeFeedback(practice) {
+  if (!practice || !practice.lastEvaluation) {
+    practiceFeedbackOutput.textContent = "Nach deiner Antwort erscheint hier dein Uebungs-Feedback.";
+    return;
+  }
+
+  const evaluation = practice.lastEvaluation;
+  const points = evaluation.evaluation.denars || 0;
+  const resultLabel = evaluation.evaluation.isCorrect ? "Treffer!" : "Noch nicht ganz";
+  practiceFeedbackOutput.textContent = [
+    `Ergebnis: ${resultLabel}`,
+    `Punkte: +${points} Denare`,
+    `Feedback: ${evaluation.evaluation.feedback}`,
+    `Loesung: ${evaluation.expected}`,
+  ].join("\n");
+}
+
 function renderFeedback() {
   const sprint = state.activeSprint;
   const evaluation = sprint?.lastEvaluation;
@@ -831,6 +1052,28 @@ function updateLessonPoolHint() {
   lessonPoolHint.textContent = `${importedForLesson.length} eigene Woerter fuer diese Lektion bereit.`;
 }
 
+function updateTabUI() {
+  const activeTab = state.ui.activeTab === "practice" ? "practice" : "challenge";
+  if (tabChallengeButton) {
+    tabChallengeButton.classList.toggle("active", activeTab === "challenge");
+  }
+  if (tabPracticeButton) {
+    tabPracticeButton.classList.toggle("active", activeTab === "practice");
+  }
+  if (challengePanel) {
+    challengePanel.classList.toggle("hidden", activeTab !== "challenge");
+  }
+  if (practicePanel) {
+    practicePanel.classList.toggle("hidden", activeTab !== "practice");
+  }
+  if (tabDescription) {
+    tabDescription.textContent =
+      activeTab === "challenge"
+        ? "Challenge: 3 Runden mit Punkten und Feedback."
+        : "Uebungen: zuerst mit Aufgaben aus deinem Buch-Scan trainieren.";
+  }
+}
+
 function renderAll() {
   denarsStat.textContent = String(state.wallet.denars);
   streakStat.textContent = String(state.wallet.streak);
@@ -840,6 +1083,7 @@ function renderAll() {
   bookInput.value = state.profile.schoolBook;
   lessonInput.value = String(normalizeLessonNumber(state.profile.lesson));
   updateLessonPoolHint();
+  updateTabUI();
 
   if (!state.activeSprint) {
     sprintCard.classList.add("hidden");
@@ -858,6 +1102,26 @@ function renderAll() {
     }
     renderTask(state.activeSprint.tasks[state.activeSprint.taskIndex], state.activeSprint);
     renderFeedback();
+  }
+
+  if (!state.activePractice) {
+    practiceCard.classList.add("hidden");
+    practiceMeta.textContent = "Noch keine Uebung gestartet.";
+    submitPracticeButton.classList.remove("hidden");
+    nextPracticeButton.classList.add("hidden");
+    practiceTaskContainer.innerHTML =
+      "<p class='muted'>Starte Uebungen, um Scan-Aufgaben zu sehen.</p>";
+    practiceFeedbackOutput.textContent = "Nach deiner Antwort erscheint hier dein Uebungs-Feedback.";
+  } else {
+    practiceCard.classList.remove("hidden");
+    submitPracticeButton.classList.remove("hidden");
+    nextPracticeButton.classList.add("hidden");
+    if (state.activePractice.lastEvaluation) {
+      submitPracticeButton.classList.add("hidden");
+      nextPracticeButton.classList.remove("hidden");
+    }
+    renderPracticeTask(state.activePractice);
+    renderPracticeFeedback(state.activePractice);
   }
 
   renderImportedList();
@@ -1013,18 +1277,26 @@ async function runImageOcr() {
   }
 
   vocabPairsInput.value = pairs.map((pair) => `${pair.latin} - ${pair.german}`).join("\n");
-  ocrStatus.textContent = `Nice! ${pairs.length} Wortpaare erkannt (${selectedLanguage}). Jetzt auf "In Challenge packen" klicken.`;
+  ocrStatus.textContent = `Nice! ${pairs.length} Wortpaare erkannt (${selectedLanguage}). Jetzt auf "In Uebungen & Challenge packen" klicken.`;
 }
 
 const denarsStat = document.getElementById("denarsStat");
 const streakStat = document.getElementById("streakStat");
 const stabilityStat = document.getElementById("stabilityStat");
 
+const tabChallengeButton = document.getElementById("tabChallenge");
+const tabPracticeButton = document.getElementById("tabPractice");
+const tabDescription = document.getElementById("tabDescription");
+const challengePanel = document.getElementById("challengePanel");
+const practicePanel = document.getElementById("practicePanel");
+
 const nameInput = document.getElementById("nameInput");
 const bookInput = document.getElementById("bookInput");
 const lessonInput = document.getElementById("lessonInput");
 const sprintWordCount = document.getElementById("sprintWordCount");
+const practiceWordCountSelect = document.getElementById("practiceWordCount");
 const startSprintButton = document.getElementById("startSprintButton");
+const startPracticeButton = document.getElementById("startPracticeButton");
 
 const sprintCard = document.getElementById("sprintCard");
 const sprintMeta = document.getElementById("sprintMeta");
@@ -1046,6 +1318,13 @@ const importStatus = document.getElementById("importStatus");
 const importedList = document.getElementById("importedList");
 const lessonPoolHint = document.getElementById("lessonPoolHint");
 const runtimeStatus = document.getElementById("runtimeStatus");
+
+const practiceCard = document.getElementById("practiceCard");
+const practiceMeta = document.getElementById("practiceMeta");
+const practiceTaskContainer = document.getElementById("practiceTaskContainer");
+const submitPracticeButton = document.getElementById("submitPracticeButton");
+const nextPracticeButton = document.getElementById("nextPracticeButton");
+const practiceFeedbackOutput = document.getElementById("practiceFeedbackOutput");
 
 function setRuntimeStatus(message, isError = false) {
   if (!runtimeStatus) return;
@@ -1070,9 +1349,23 @@ function bindClick(element, handler) {
 }
 
 bindClick(startSprintButton, startSprint);
+bindClick(startPracticeButton, startPractice);
 bindClick(submitAnswerButton, gradeCurrentTask);
 bindClick(nextTaskButton, nextTask);
+bindClick(submitPracticeButton, gradePracticeTask);
+bindClick(nextPracticeButton, nextPracticeTask);
 bindClick(ocrFromImageButton, runImageOcr);
+
+bindClick(tabChallengeButton, () => {
+  state.ui.activeTab = "challenge";
+  saveState();
+  renderAll();
+});
+bindClick(tabPracticeButton, () => {
+  state.ui.activeTab = "practice";
+  saveState();
+  renderAll();
+});
 
 if (bookInput) {
   bookInput.addEventListener("input", () => {
@@ -1120,7 +1413,7 @@ bindClick(importImageVocabButton, () => {
   state.uploadedVocabulary = mergeVocabularyEntries(state.uploadedVocabulary, imported);
   state.profile.schoolBook = selectedBook;
   state.profile.lesson = selectedLesson;
-  importStatus.textContent = `${imported.length} neue Woerter fuer ${selectedBook} Lektion ${selectedLesson} gespeichert!`;
+  importStatus.textContent = `${imported.length} neue Woerter fuer ${selectedBook} Lektion ${selectedLesson} gespeichert (Uebungen + Challenge).`;
   vocabPairsInput.value = "";
   saveState();
   renderAll();
