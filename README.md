@@ -54,7 +54,7 @@ Die Pages-App enthaelt jetzt:
 - Denare + Streak + Stabilitaetsanzeige (lokal gespeichert)
 - Bild-Upload mit OCR via Tesseract.js (Browser-seitig)
 - Automatische Erkennung von Vokabelpaaren (`Latein - Deutsch`) zur Uebernahme in den Aufgabenpool
-- Campus-2-Lektionsmodus: Aufgaben werden aus der gewaehlten Lektion aufgebaut
+- Campus-2-Lektionsmodus: Aufgaben werden aus der gewaehlten Lektion aufgebaut (Starter-Packs Lektion 1-20)
 
 ## Tech-Entscheidung (Empfehlung)
 

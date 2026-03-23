@@ -128,6 +128,76 @@ const CAMPUS2_LESSON_BANK = {
     { lemma: "defendere", meaning: "verteidigen", emoji: "🛡️" },
     { lemma: "oppugnare", meaning: "angreifen", emoji: "🧱" },
   ],
+  11: [
+    { lemma: "navigare", meaning: "segeln", emoji: "⛵" },
+    { lemma: "intrare", meaning: "hineingehen", emoji: "🚪" },
+    { lemma: "exire", meaning: "hinausgehen", emoji: "🏃" },
+    { lemma: "manere", meaning: "bleiben", emoji: "🕒" },
+    { lemma: "advenire", meaning: "ankommen", emoji: "🚌" },
+  ],
+  12: [
+    { lemma: "clamare", meaning: "schreien", emoji: "📢" },
+    { lemma: "cantare", meaning: "singen", emoji: "🎵" },
+    { lemma: "saltare", meaning: "springen", emoji: "🤸" },
+    { lemma: "spectare", meaning: "zuschauen", emoji: "👓" },
+    { lemma: "ludere", meaning: "spielen", emoji: "🎮" },
+  ],
+  13: [
+    { lemma: "invenire", meaning: "finden", emoji: "🔍" },
+    { lemma: "aperire", meaning: "oeffnen", emoji: "🔓" },
+    { lemma: "claudere", meaning: "schliessen", emoji: "🔒" },
+    { lemma: "parere", meaning: "gehorchen", emoji: "🙋" },
+    { lemma: "stare", meaning: "stehen", emoji: "🧍" },
+  ],
+  14: [
+    { lemma: "iacere", meaning: "werfen", emoji: "🥏" },
+    { lemma: "sedere", meaning: "sitzen", emoji: "🪑" },
+    { lemma: "currere", meaning: "rennen", emoji: "🏃‍♀️" },
+    { lemma: "salutare", meaning: "gruessen", emoji: "👋" },
+    { lemma: "intrare", meaning: "betreten", emoji: "🚶" },
+  ],
+  15: [
+    { lemma: "narrare", meaning: "berichten", emoji: "📰" },
+    { lemma: "ostendere", meaning: "zeigen", emoji: "🪄" },
+    { lemma: "cogitare", meaning: "nachdenken", emoji: "🤔" },
+    { lemma: "scribere", meaning: "notieren", emoji: "📝" },
+    { lemma: "legere", meaning: "vorlesen", emoji: "📚" },
+  ],
+  16: [
+    { lemma: "frangere", meaning: "brechen", emoji: "🪓" },
+    { lemma: "tangere", meaning: "beruehren", emoji: "🖐️" },
+    { lemma: "agere", meaning: "handeln", emoji: "⚙️" },
+    { lemma: "ducere", meaning: "ziehen", emoji: "🧲" },
+    { lemma: "trahere", meaning: "schleppen", emoji: "🪢" },
+  ],
+  17: [
+    { lemma: "petere", meaning: "anpeilen", emoji: "🎯" },
+    { lemma: "quaerere", meaning: "erfragen", emoji: "❔" },
+    { lemma: "invitare", meaning: "einladen", emoji: "💌" },
+    { lemma: "accipere", meaning: "annehmen", emoji: "📥" },
+    { lemma: "recipere", meaning: "zuruecknehmen", emoji: "↩️" },
+  ],
+  18: [
+    { lemma: "monstrare", meaning: "erklaeren", emoji: "🧭" },
+    { lemma: "habitare", meaning: "leben", emoji: "🏡" },
+    { lemma: "laborare", meaning: "muhe geben", emoji: "💪" },
+    { lemma: "conservare", meaning: "bewahren", emoji: "🧰" },
+    { lemma: "ornare", meaning: "schmuecken", emoji: "🎀" },
+  ],
+  19: [
+    { lemma: "parere", meaning: "erscheinen", emoji: "✨" },
+    { lemma: "discedere", meaning: "weggehen", emoji: "🚶‍♂️" },
+    { lemma: "ascendere", meaning: "hinaufsteigen", emoji: "🧗" },
+    { lemma: "descendere", meaning: "hinabsteigen", emoji: "⬇️" },
+    { lemma: "manere", meaning: "verweilen", emoji: "🕰️" },
+  ],
+  20: [
+    { lemma: "audere", meaning: "wagen", emoji: "🔥" },
+    { lemma: "sperare", meaning: "hoffen", emoji: "🌟" },
+    { lemma: "timere", meaning: "Angst haben", emoji: "😬" },
+    { lemma: "vincere", meaning: "gewinnen", emoji: "🥇" },
+    { lemma: "celebrare", meaning: "feiern", emoji: "🎊" },
+  ],
 };
 
 function normalize(input) {
@@ -212,6 +282,22 @@ function getCampus2LessonVocabulary(lessonNumber) {
       suffixes: DEFAULT_SUFFIXES,
     })
   );
+}
+
+function getCampus2AvailableLessonNumbers() {
+  return Object.keys(CAMPUS2_LESSON_BANK)
+    .map((key) => Number(key))
+    .filter((value) => Number.isFinite(value))
+    .sort((a, b) => a - b);
+}
+
+function getCampus2NeighborVocabulary(lessonNumber, maxDistance = 1) {
+  const normalized = normalizeLessonNumber(lessonNumber);
+  const available = getCampus2AvailableLessonNumbers();
+  const neighbors = available.filter(
+    (candidate) => candidate !== normalized && Math.abs(candidate - normalized) <= maxDistance
+  );
+  return mergeVocabularyEntries(...neighbors.map((candidate) => getCampus2LessonVocabulary(candidate)));
 }
 
 function levenshteinDistance(a, b) {
@@ -385,12 +471,18 @@ function getSelectedLessonNumber() {
 }
 
 function getLessonPool(bookName, lessonNumber) {
-  const builtInCampusLesson = isCampus2Book(bookName)
-    ? getCampus2LessonVocabulary(lessonNumber)
-    : [];
+  const isCampus2 = isCampus2Book(bookName);
+  const builtInCampusLesson = isCampus2 ? getCampus2LessonVocabulary(lessonNumber) : [];
+  const nearbyCampusLesson = isCampus2 ? getCampus2NeighborVocabulary(lessonNumber, 1) : [];
   const importedForLesson = getLessonVocabularyFromUser(bookName, lessonNumber);
 
   let pool = mergeVocabularyEntries(builtInCampusLesson, importedForLesson);
+  let usesNeighborLesson = false;
+  if (pool.length < 2 && nearbyCampusLesson.length > 0) {
+    pool = mergeVocabularyEntries(pool, nearbyCampusLesson);
+    usesNeighborLesson = true;
+  }
+
   let usesFallback = false;
   if (pool.length < 2) {
     pool = mergeVocabularyEntries(pool, BASE_VOCABULARY);
@@ -400,7 +492,9 @@ function getLessonPool(bookName, lessonNumber) {
   return {
     pool,
     builtInCampusLesson,
+    nearbyCampusLesson,
     importedForLesson,
+    usesNeighborLesson,
     usesFallback,
   };
 }
@@ -698,17 +792,33 @@ function updateLessonPoolHint() {
   if (!lessonPoolHint) return;
   const selectedBook = getSelectedBookName();
   const selectedLesson = getSelectedLessonNumber();
-  const { builtInCampusLesson, importedForLesson, usesFallback } = getLessonPool(
+  const {
+    builtInCampusLesson,
+    nearbyCampusLesson,
+    importedForLesson,
+    usesNeighborLesson,
+    usesFallback,
+  } = getLessonPool(
     selectedBook,
     selectedLesson
   );
 
   if (isCampus2Book(selectedBook)) {
+    const availableLessons = getCampus2AvailableLessonNumbers();
+    const minLesson = availableLessons[0];
+    const maxLesson = availableLessons[availableLessons.length - 1];
+
     if (builtInCampusLesson.length > 0) {
-      lessonPoolHint.textContent = `Campus 2 Lektion ${selectedLesson}: ${builtInCampusLesson.length} Starter-Woerter + ${importedForLesson.length} eigene Woerter.`;
+      lessonPoolHint.textContent = `Campus 2 Lektion ${selectedLesson}: ${builtInCampusLesson.length} Starter-Woerter + ${importedForLesson.length} eigene Woerter (verfuegbar: Lektion ${minLesson}-${maxLesson}).`;
       return;
     }
-    lessonPoolHint.textContent = `Campus 2 Lektion ${selectedLesson}: Noch kein Starter-Pack. Lade ein Foto hoch, dann bauen wir daraus Aufgaben.`;
+
+    if (usesNeighborLesson && nearbyCampusLesson.length > 0) {
+      lessonPoolHint.textContent = `Fuer Lektion ${selectedLesson} gibt es noch kein eigenes Starter-Pack. Ich nutze zurzeit Woerter aus Nachbarlektionen + deine eigenen (${importedForLesson.length}).`;
+      return;
+    }
+
+    lessonPoolHint.textContent = `Campus 2 Lektion ${selectedLesson}: Noch kein Starter-Pack. Lade ein Foto hoch, dann bauen wir daraus Aufgaben (verfuegbar: Lektion ${minLesson}-${maxLesson}).`;
     return;
   }
 
