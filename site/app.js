@@ -531,6 +531,124 @@ function buildImportedVocabulary(lines) {
   });
 }
 
+function sanitizePairTerm(input) {
+  return String(input || "")
+    .replace(/[|()[\]{}<>]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseVocabularyPairsFromText(rawText) {
+  const lines = String(rawText || "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/[—–]/g, "-").trim())
+    .filter(Boolean);
+
+  const pairs = [];
+  const seen = new Set();
+
+  lines.forEach((line) => {
+    let latin = "";
+    let german = "";
+
+    const separatorMatch = line.match(/^(.+?)\s*(?:-|:|=|->|=>)\s*(.+)$/);
+    if (separatorMatch) {
+      latin = sanitizePairTerm(separatorMatch[1]);
+      german = sanitizePairTerm(separatorMatch[2]);
+    } else {
+      const twoColumnMatch = line.match(/^([A-Za-z][A-Za-z\- ]{1,})\s{2,}([A-Za-z][A-Za-z\- ]{1,})$/);
+      if (twoColumnMatch) {
+        latin = sanitizePairTerm(twoColumnMatch[1]);
+        german = sanitizePairTerm(twoColumnMatch[2]);
+      }
+    }
+
+    if (!latin || !german) return;
+    if (latin.length < 2 || german.length < 2) return;
+
+    const key = `${normalize(latin)}::${normalize(german)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    pairs.push({ latin, german });
+  });
+
+  return pairs;
+}
+
+function setButtonBusy(button, busy) {
+  if (!button) return;
+  button.disabled = busy;
+  button.style.opacity = busy ? "0.7" : "";
+  button.style.cursor = busy ? "wait" : "";
+}
+
+async function runImageOcr() {
+  if (!imageInput || !vocabPairsInput || !ocrStatus) return;
+  const file = imageInput.files?.[0];
+  if (!file) {
+    ocrStatus.textContent = "Bitte zuerst ein Bild aus dem Buch auswaehlen.";
+    return;
+  }
+
+  if (!window.Tesseract || typeof window.Tesseract.recognize !== "function") {
+    ocrStatus.textContent =
+      "Tesseract.js konnte nicht geladen werden. Bitte Internetverbindung pruefen und Seite neu laden.";
+    return;
+  }
+
+  const languageFallbacks = ["lat+deu+eng", "deu+eng", "eng"];
+  let resultText = "";
+  let selectedLanguage = "";
+  let lastError = null;
+
+  setButtonBusy(ocrFromImageButton, true);
+  if (ocrProgress) {
+    ocrProgress.value = 0;
+    ocrProgress.classList.remove("hidden");
+  }
+  ocrStatus.textContent = "OCR gestartet...";
+
+  for (const language of languageFallbacks) {
+    try {
+      ocrStatus.textContent = `OCR laeuft (${language})...`;
+      const result = await window.Tesseract.recognize(file, language, {
+        logger: (message) => {
+          if (message.status && typeof message.progress === "number") {
+            if (ocrProgress) ocrProgress.value = message.progress;
+            ocrStatus.textContent = `${message.status} (${Math.round(message.progress * 100)}%)`;
+          }
+        },
+      });
+      resultText = result?.data?.text || "";
+      selectedLanguage = language;
+      break;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (ocrProgress) ocrProgress.classList.add("hidden");
+  setButtonBusy(ocrFromImageButton, false);
+
+  if (!resultText) {
+    ocrStatus.textContent =
+      "Kein Text erkannt. Bitte schaerferes Bild probieren oder Vokabeln manuell eingeben.";
+    if (lastError) console.error(lastError);
+    return;
+  }
+
+  const pairs = parseVocabularyPairsFromText(resultText);
+  if (pairs.length === 0) {
+    ocrStatus.textContent =
+      `OCR fertig (${selectedLanguage}), aber keine Paare im Format Latein - Deutsch erkannt. Bitte Ergebnis manuell anpassen.`;
+    vocabPairsInput.value = resultText.trim();
+    return;
+  }
+
+  vocabPairsInput.value = pairs.map((pair) => `${pair.latin} - ${pair.german}`).join("\n");
+  ocrStatus.textContent = `OCR fertig (${selectedLanguage}): ${pairs.length} Vokabelpaare erkannt. Jetzt "Vokabeln importieren" klicken.`;
+}
+
 const denarsStat = document.getElementById("denarsStat");
 const streakStat = document.getElementById("streakStat");
 const stabilityStat = document.getElementById("stabilityStat");
@@ -553,6 +671,9 @@ const feedbackOutput = document.getElementById("feedbackOutput");
 const imageInput = document.getElementById("imageInput");
 const vocabPairsInput = document.getElementById("vocabPairsInput");
 const importImageVocabButton = document.getElementById("importImageVocabButton");
+const ocrFromImageButton = document.getElementById("ocrFromImageButton");
+const ocrStatus = document.getElementById("ocrStatus");
+const ocrProgress = document.getElementById("ocrProgress");
 const imagePreview = document.getElementById("imagePreview");
 const importStatus = document.getElementById("importStatus");
 const importedList = document.getElementById("importedList");
@@ -568,21 +689,22 @@ function bindClick(element, handler) {
   if (!element) return;
   element.addEventListener("click", (event) => {
     event.preventDefault();
-    try {
-      handler();
-    } catch (error) {
+    Promise.resolve()
+      .then(() => handler())
+      .catch((error) => {
       console.error(error);
       setRuntimeStatus(
         "Ein Laufzeitfehler ist aufgetreten. Bitte Seite neu laden (Strg+F5).",
         true
       );
-    }
+      });
   });
 }
 
 bindClick(startSprintButton, startSprint);
 bindClick(submitAnswerButton, gradeCurrentTask);
 bindClick(nextTaskButton, nextTask);
+bindClick(ocrFromImageButton, runImageOcr);
 
 if (imageInput && imagePreview) {
   imageInput.addEventListener("change", () => {
@@ -590,10 +712,14 @@ if (imageInput && imagePreview) {
     if (!file) {
       imagePreview.classList.add("hidden");
       imagePreview.removeAttribute("src");
+      if (ocrStatus) ocrStatus.textContent = "";
       return;
     }
     imagePreview.src = URL.createObjectURL(file);
     imagePreview.classList.remove("hidden");
+    if (ocrStatus) {
+      ocrStatus.textContent = "Bild geladen. Optional: 'Text aus Bild lesen (OCR)' starten.";
+    }
   });
 }
 
@@ -611,6 +737,14 @@ bindClick(importImageVocabButton, () => {
   saveState();
   renderAll();
 });
+
+if (ocrFromImageButton && (!window.Tesseract || typeof window.Tesseract.recognize !== "function")) {
+  ocrFromImageButton.disabled = true;
+  if (ocrStatus) {
+    ocrStatus.textContent =
+      "OCR-Bibliothek noch nicht verfuegbar. Bitte Seite neu laden oder Internetverbindung pruefen.";
+  }
+}
 
 try {
   renderAll();

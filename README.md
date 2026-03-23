@@ -52,7 +52,8 @@ Die Pages-App enthaelt jetzt:
 - Daily Sprint mit 3 Phasen (Erkennen, Struktur, Produktion)
 - LRS-freundliche Smart-Correction in Phase C
 - Denare + Streak + Stabilitaetsanzeige (lokal gespeichert)
-- Bild-Upload mit Vokabel-Import (`Latein - Deutsch`) in den Aufgabenpool
+- Bild-Upload mit OCR via Tesseract.js (Browser-seitig)
+- Automatische Erkennung von Vokabelpaaren (`Latein - Deutsch`) zur Uebernahme in den Aufgabenpool
 
 ## Tech-Entscheidung (Empfehlung)
 
