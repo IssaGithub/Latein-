@@ -71,13 +71,13 @@ function loadAppContext() {
 
 test("3.-io-Verben werden mit io/it/iunt gebaut", () => {
   const context = loadAppContext();
-  const suffixes = context.inferSuffixProfileForLemma("capere").map((item) => item.suffix);
+  const suffixes = Array.from(context.inferSuffixProfileForLemma("capere"), (item) => item.suffix);
   assert.deepEqual(suffixes, ["io", "it", "iunt"]);
 });
 
 test("parere wird als 2. Konjugation behandelt", () => {
   const context = loadAppContext();
-  const suffixes = context.inferSuffixProfileForLemma("parere").map((item) => item.suffix);
+  const suffixes = Array.from(context.inferSuffixProfileForLemma("parere"), (item) => item.suffix);
   assert.deepEqual(suffixes, ["eo", "et", "ent"]);
 });
 
@@ -91,7 +91,7 @@ test("exire nutzt kuratierte irregulaere Formen", () => {
 
   assert.equal(entry.stem, "ex");
   assert.deepEqual(
-    entry.suffixes.map((item) => item.suffix),
+    Array.from(entry.suffixes, (item) => item.suffix),
     ["eo", "it", "eunt"]
   );
   assert.equal(entry.isVerifiedConjugation, true);
