@@ -51,6 +51,85 @@ const BASE_VOCABULARY = [
   },
 ];
 
+const DEFAULT_SUFFIXES = [
+  { suffix: "o", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
+  { suffix: "t", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
+  { suffix: "unt", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
+];
+
+const CAMPUS2_LESSON_BANK = {
+  1: [
+    { lemma: "amare", meaning: "lieben", emoji: "❤️" },
+    { lemma: "laudare", meaning: "loben", emoji: "👏" },
+    { lemma: "portare", meaning: "tragen", emoji: "🎒" },
+    { lemma: "habitare", meaning: "wohnen", emoji: "🏠" },
+    { lemma: "parare", meaning: "vorbereiten", emoji: "🧰" },
+  ],
+  2: [
+    { lemma: "vocare", meaning: "rufen", emoji: "📣" },
+    { lemma: "narrare", meaning: "erzaehlen", emoji: "🗣️" },
+    { lemma: "spectare", meaning: "anschauen", emoji: "👀" },
+    { lemma: "donare", meaning: "schenken", emoji: "🎁" },
+    { lemma: "rogare", meaning: "fragen", emoji: "❓" },
+  ],
+  3: [
+    { lemma: "audire", meaning: "hoeren", emoji: "👂" },
+    { lemma: "dormire", meaning: "schlafen", emoji: "😴" },
+    { lemma: "venire", meaning: "kommen", emoji: "🚶" },
+    { lemma: "sentire", meaning: "fuehlen", emoji: "💭" },
+    { lemma: "finire", meaning: "beenden", emoji: "🏁" },
+  ],
+  4: [
+    { lemma: "videre", meaning: "sehen", emoji: "👁️" },
+    { lemma: "habere", meaning: "haben", emoji: "🧩" },
+    { lemma: "tenere", meaning: "halten", emoji: "✋" },
+    { lemma: "tacere", meaning: "schweigen", emoji: "🤫" },
+    { lemma: "ridere", meaning: "lachen", emoji: "😄" },
+  ],
+  5: [
+    { lemma: "scribere", meaning: "schreiben", emoji: "✍️" },
+    { lemma: "legere", meaning: "lesen", emoji: "📖" },
+    { lemma: "mittere", meaning: "schicken", emoji: "📨" },
+    { lemma: "ducere", meaning: "fuehren", emoji: "🧭" },
+    { lemma: "currere", meaning: "laufen", emoji: "🏃" },
+  ],
+  6: [
+    { lemma: "facere", meaning: "machen", emoji: "🛠️" },
+    { lemma: "capere", meaning: "fassen", emoji: "🤏" },
+    { lemma: "ponere", meaning: "legen", emoji: "📌" },
+    { lemma: "quaerere", meaning: "suchen", emoji: "🔎" },
+    { lemma: "petere", meaning: "anstreben", emoji: "🎯" },
+  ],
+  7: [
+    { lemma: "iuvare", meaning: "helfen", emoji: "🤝" },
+    { lemma: "orare", meaning: "bitten", emoji: "🙏" },
+    { lemma: "explicare", meaning: "erklaeren", emoji: "💡" },
+    { lemma: "monstrare", meaning: "zeigen", emoji: "👉" },
+    { lemma: "servare", meaning: "retten", emoji: "🛟" },
+  ],
+  8: [
+    { lemma: "ambulare", meaning: "spazieren", emoji: "🚶‍♂️" },
+    { lemma: "pugnare", meaning: "kaempfen", emoji: "⚔️" },
+    { lemma: "celebrare", meaning: "feiern", emoji: "🎉" },
+    { lemma: "laborare", meaning: "arbeiten", emoji: "💼" },
+    { lemma: "custodire", meaning: "bewachen", emoji: "🛡️" },
+  ],
+  9: [
+    { lemma: "docere", meaning: "lehren", emoji: "🧑‍🏫" },
+    { lemma: "monere", meaning: "warnen", emoji: "⚠️" },
+    { lemma: "movere", meaning: "bewegen", emoji: "🎬" },
+    { lemma: "timere", meaning: "fuerchten", emoji: "😨" },
+    { lemma: "respondere", meaning: "antworten", emoji: "💬" },
+  ],
+  10: [
+    { lemma: "cognoscere", meaning: "kennenlernen", emoji: "🧠" },
+    { lemma: "vincere", meaning: "siegen", emoji: "🏆" },
+    { lemma: "perdere", meaning: "verlieren", emoji: "💥" },
+    { lemma: "defendere", meaning: "verteidigen", emoji: "🛡️" },
+    { lemma: "oppugnare", meaning: "angreifen", emoji: "🧱" },
+  ],
+};
+
 function normalize(input) {
   return (input || "").toLowerCase().trim().replace(/\s+/g, "");
 }
@@ -62,6 +141,77 @@ function escapeHtml(input) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function normalizeBookName(name) {
+  return normalize(name).replace(/[^a-z0-9]/g, "");
+}
+
+function isCampus2Book(name) {
+  const value = normalizeBookName(name);
+  return value.includes("campus2");
+}
+
+function normalizeLessonNumber(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 1;
+  return Math.max(1, Math.floor(parsed));
+}
+
+function lessonKey(bookName, lessonNumber) {
+  return `${normalizeBookName(bookName)}::${normalizeLessonNumber(lessonNumber)}`;
+}
+
+function deriveStemFromLemma(lemma) {
+  const rawLemma = normalize(lemma);
+  if (rawLemma.endsWith("are")) return rawLemma.slice(0, -3);
+  if (rawLemma.endsWith("ere")) return rawLemma.slice(0, -3);
+  if (rawLemma.endsWith("ire")) return rawLemma.slice(0, -3);
+  if (rawLemma.length > 3) return rawLemma.slice(0, -1);
+  return rawLemma;
+}
+
+function buildVocabularyEntry({
+  id,
+  lemma,
+  meaning,
+  emoji = "🧠",
+  suffixes = DEFAULT_SUFFIXES,
+}) {
+  const normalizedLemma = normalize(lemma);
+  return {
+    id,
+    lemma: normalizedLemma,
+    stem: deriveStemFromLemma(normalizedLemma),
+    meaning: String(meaning || "").trim().toLowerCase(),
+    emoji,
+    suffixes: suffixes.map((item) => ({ ...item })),
+  };
+}
+
+function mergeVocabularyEntries(...groups) {
+  const merged = new Map();
+  groups
+    .flat()
+    .filter(Boolean)
+    .forEach((entry) => {
+      const key = `${normalize(entry.lemma)}::${normalize(entry.meaning)}`;
+      if (!merged.has(key)) merged.set(key, entry);
+    });
+  return Array.from(merged.values());
+}
+
+function getCampus2LessonVocabulary(lessonNumber) {
+  const lessonRows = CAMPUS2_LESSON_BANK[normalizeLessonNumber(lessonNumber)] || [];
+  return lessonRows.map((row, index) =>
+    buildVocabularyEntry({
+      id: `campus2-l${normalizeLessonNumber(lessonNumber)}-${normalize(row.lemma)}-${index}`,
+      lemma: row.lemma,
+      meaning: row.meaning,
+      emoji: row.emoji || "📘",
+      suffixes: DEFAULT_SUFFIXES,
+    })
+  );
 }
 
 function levenshteinDistance(a, b) {
@@ -184,11 +334,12 @@ function defaultState() {
   return {
     profile: {
       name: "Schueler",
-      schoolBook: "Campus C",
-      lesson: 7,
+      schoolBook: "Campus 2",
+      lesson: 1,
     },
     wallet: { denars: 0, streak: 0 },
     progress: {},
+    lessonVocabulary: {},
     uploadedVocabulary: [],
     activeSprint: null,
   };
@@ -196,8 +347,62 @@ function defaultState() {
 
 let state = loadState() || defaultState();
 
-function fullVocabulary() {
-  return [...BASE_VOCABULARY, ...state.uploadedVocabulary];
+if (!state.profile || typeof state.profile !== "object") {
+  state.profile = { ...defaultState().profile };
+}
+if (!state.wallet || typeof state.wallet !== "object") {
+  state.wallet = { ...defaultState().wallet };
+}
+if (!state.progress || typeof state.progress !== "object") {
+  state.progress = {};
+}
+if (!state.lessonVocabulary || typeof state.lessonVocabulary !== "object") {
+  state.lessonVocabulary = {};
+}
+if (!Array.isArray(state.uploadedVocabulary)) {
+  state.uploadedVocabulary = [];
+}
+
+if (
+  state.uploadedVocabulary.length > 0 &&
+  Object.keys(state.lessonVocabulary).length === 0 &&
+  state.profile?.schoolBook
+) {
+  const migratedKey = lessonKey(state.profile.schoolBook, state.profile.lesson || 1);
+  state.lessonVocabulary[migratedKey] = [...state.uploadedVocabulary];
+}
+
+function getLessonVocabularyFromUser(bookName, lessonNumber) {
+  return state.lessonVocabulary[lessonKey(bookName, lessonNumber)] || [];
+}
+
+function getSelectedBookName() {
+  return bookInput?.value?.trim() || state.profile.schoolBook || "Campus 2";
+}
+
+function getSelectedLessonNumber() {
+  return normalizeLessonNumber(lessonInput?.value || state.profile.lesson || 1);
+}
+
+function getLessonPool(bookName, lessonNumber) {
+  const builtInCampusLesson = isCampus2Book(bookName)
+    ? getCampus2LessonVocabulary(lessonNumber)
+    : [];
+  const importedForLesson = getLessonVocabularyFromUser(bookName, lessonNumber);
+
+  let pool = mergeVocabularyEntries(builtInCampusLesson, importedForLesson);
+  let usesFallback = false;
+  if (pool.length < 2) {
+    pool = mergeVocabularyEntries(pool, BASE_VOCABULARY);
+    usesFallback = true;
+  }
+
+  return {
+    pool,
+    builtInCampusLesson,
+    importedForLesson,
+    usesFallback,
+  };
 }
 
 function allSuffixesFromPool(pool) {
@@ -269,15 +474,16 @@ function buildWordCycleTask(entry, phase, index, pool) {
 }
 
 function startSprint() {
-  const pool = fullVocabulary();
+  state.profile.name = nameInput.value.trim() || "Schueler";
+  state.profile.schoolBook = getSelectedBookName();
+  state.profile.lesson = getSelectedLessonNumber();
+
+  const lessonPool = getLessonPool(state.profile.schoolBook, state.profile.lesson);
+  const pool = lessonPool.pool;
   if (pool.length < 2) {
-    alert("Bitte erst mindestens 2 Woerter im Pool haben.");
+    alert("Zu wenig Woerter fuer diese Lektion. Lade erst ein Foto hoch oder waehle eine andere Lektion.");
     return;
   }
-
-  state.profile.name = nameInput.value.trim() || "Schueler";
-  state.profile.schoolBook = bookInput.value.trim() || "Campus C";
-  state.profile.lesson = Number(lessonInput.value || 1);
 
   const wordCount = Number(sprintWordCount.value || 3);
   const chosenEntries = sample(pool, Math.min(wordCount, pool.length));
@@ -296,6 +502,8 @@ function startSprint() {
     lastEvaluation: null,
     selectedOption: null,
     textAnswer: "",
+    bookName: state.profile.schoolBook,
+    lessonNumber: state.profile.lesson,
   };
 
   saveState();
@@ -469,16 +677,48 @@ function renderFeedback() {
 }
 
 function renderImportedList() {
-  if (state.uploadedVocabulary.length === 0) {
-    importedList.innerHTML = "<li class='muted'>Noch keine extra Woerter importiert.</li>";
+  const selectedBook = getSelectedBookName();
+  const selectedLesson = getSelectedLessonNumber();
+  const importedForLesson = getLessonVocabularyFromUser(selectedBook, selectedLesson);
+
+  if (importedForLesson.length === 0) {
+    importedList.innerHTML =
+      "<li class='muted'>Noch keine extra Woerter fuer diese Lektion importiert.</li>";
     return;
   }
-  importedList.innerHTML = state.uploadedVocabulary
+  importedList.innerHTML = importedForLesson
     .map(
       (item) =>
         `<li>${escapeHtml(item.lemma)} - ${escapeHtml(item.meaning)} <span class="muted">(Stamm: ${escapeHtml(item.stem)})</span></li>`
     )
     .join("");
+}
+
+function updateLessonPoolHint() {
+  if (!lessonPoolHint) return;
+  const selectedBook = getSelectedBookName();
+  const selectedLesson = getSelectedLessonNumber();
+  const { builtInCampusLesson, importedForLesson, usesFallback } = getLessonPool(
+    selectedBook,
+    selectedLesson
+  );
+
+  if (isCampus2Book(selectedBook)) {
+    if (builtInCampusLesson.length > 0) {
+      lessonPoolHint.textContent = `Campus 2 Lektion ${selectedLesson}: ${builtInCampusLesson.length} Starter-Woerter + ${importedForLesson.length} eigene Woerter.`;
+      return;
+    }
+    lessonPoolHint.textContent = `Campus 2 Lektion ${selectedLesson}: Noch kein Starter-Pack. Lade ein Foto hoch, dann bauen wir daraus Aufgaben.`;
+    return;
+  }
+
+  if (usesFallback) {
+    lessonPoolHint.textContent =
+      "Fuer dieses Buch/Lektion gibt es noch keine feste Liste. Du kannst per Foto schnell eigene Woerter laden.";
+    return;
+  }
+
+  lessonPoolHint.textContent = `${importedForLesson.length} eigene Woerter fuer diese Lektion bereit.`;
 }
 
 function renderAll() {
@@ -488,7 +728,8 @@ function renderAll() {
 
   nameInput.value = state.profile.name;
   bookInput.value = state.profile.schoolBook;
-  lessonInput.value = String(state.profile.lesson);
+  lessonInput.value = String(normalizeLessonNumber(state.profile.lesson));
+  updateLessonPoolHint();
 
   if (!state.activeSprint) {
     sprintCard.classList.add("hidden");
@@ -525,26 +766,15 @@ function buildImportedVocabulary(lines) {
     })
     .filter(Boolean);
 
-  return parsed.map((item, index) => {
-    const rawLemma = normalize(item.latin);
-    let stem = rawLemma;
-    if (rawLemma.endsWith("are")) stem = rawLemma.slice(0, -3);
-    else if (rawLemma.endsWith("ere")) stem = rawLemma.slice(0, -3);
-    else if (rawLemma.endsWith("ire")) stem = rawLemma.slice(0, -3);
-
-    return {
+  return parsed.map((item, index) =>
+    buildVocabularyEntry({
       id: `upload-${Date.now()}-${index}`,
-      lemma: rawLemma,
-      stem,
-      meaning: item.german.toLowerCase(),
+      lemma: item.latin,
+      meaning: item.german,
       emoji: "🖼️",
-      suffixes: [
-        { suffix: "o", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
-        { suffix: "t", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
-        { suffix: "unt", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
-      ],
-    };
-  });
+      suffixes: DEFAULT_SUFFIXES,
+    })
+  );
 }
 
 function sanitizePairTerm(input) {
@@ -704,6 +934,7 @@ const ocrProgress = document.getElementById("ocrProgress");
 const imagePreview = document.getElementById("imagePreview");
 const importStatus = document.getElementById("importStatus");
 const importedList = document.getElementById("importedList");
+const lessonPoolHint = document.getElementById("lessonPoolHint");
 const runtimeStatus = document.getElementById("runtimeStatus");
 
 function setRuntimeStatus(message, isError = false) {
@@ -733,6 +964,19 @@ bindClick(submitAnswerButton, gradeCurrentTask);
 bindClick(nextTaskButton, nextTask);
 bindClick(ocrFromImageButton, runImageOcr);
 
+if (bookInput) {
+  bookInput.addEventListener("input", () => {
+    updateLessonPoolHint();
+    renderImportedList();
+  });
+}
+if (lessonInput) {
+  lessonInput.addEventListener("input", () => {
+    updateLessonPoolHint();
+    renderImportedList();
+  });
+}
+
 if (imageInput && imagePreview) {
   imageInput.addEventListener("change", () => {
     const file = imageInput.files?.[0];
@@ -751,6 +995,8 @@ if (imageInput && imagePreview) {
 }
 
 bindClick(importImageVocabButton, () => {
+  const selectedBook = getSelectedBookName();
+  const selectedLesson = getSelectedLessonNumber();
   const lines = vocabPairsInput.value.split("\n");
   const imported = buildImportedVocabulary(lines);
   if (imported.length === 0) {
@@ -758,8 +1004,13 @@ bindClick(importImageVocabButton, () => {
     return;
   }
 
-  state.uploadedVocabulary.push(...imported);
-  importStatus.textContent = `${imported.length} neue Woerter in deine Challenge gepackt!`;
+  const key = lessonKey(selectedBook, selectedLesson);
+  const existing = state.lessonVocabulary[key] || [];
+  state.lessonVocabulary[key] = mergeVocabularyEntries(existing, imported);
+  state.uploadedVocabulary = mergeVocabularyEntries(state.uploadedVocabulary, imported);
+  state.profile.schoolBook = selectedBook;
+  state.profile.lesson = selectedLesson;
+  importStatus.textContent = `${imported.length} neue Woerter fuer ${selectedBook} Lektion ${selectedLesson} gespeichert!`;
   vocabPairsInput.value = "";
   saveState();
   renderAll();
