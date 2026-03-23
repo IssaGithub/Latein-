@@ -44,6 +44,16 @@ Erwartete URL nach erfolgreichem Deployment:
 
 `https://issagithub.github.io/Latein-/`
 
+## Aktueller MVP-Status (Pages)
+
+Die Pages-App enthaelt jetzt:
+
+- Onboarding/Check-in (Name, Buch, Lektion, Sprint-Laenge)
+- Daily Sprint mit 3 Phasen (Erkennen, Struktur, Produktion)
+- LRS-freundliche Smart-Correction in Phase C
+- Denare + Streak + Stabilitaetsanzeige (lokal gespeichert)
+- Bild-Upload mit Vokabel-Import (`Latein - Deutsch`) in den Aufgabenpool
+
 ## Tech-Entscheidung (Empfehlung)
 
 - **Mobile Frontend**: Flutter oder React Native (Animationen, Cross-Platform)

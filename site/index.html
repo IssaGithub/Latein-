@@ -8,86 +8,95 @@
   </head>
   <body>
     <header class="hero">
-      <p class="label">Motivation + Struktur + LRS-Fokus</p>
+      <p class="label">MVP - Daily Sprint mit LRS-Filter</p>
       <h1>Latein Sprint App</h1>
       <p>
-        Vom Frust zum Erfolg: kurze Daily Sprints, intelligente Korrektur und
-        ein Datenmodell, das Stamm und Endung sauber trennt.
+        Diese Version ist als nutzbare App aufgebaut: Onboarding, 3 Sprint-Phasen,
+        motivierendes Feedback, Denare und Bild-Upload zu neuen Aufgaben.
       </p>
-      <a class="button" href="#demo">LRS-Filter testen</a>
+      <div class="stats">
+        <span class="chip">Denare: <strong id="denarsStat">0</strong></span>
+        <span class="chip">Streak: <strong id="streakStat">0</strong></span>
+        <span class="chip">Stabilitaet: <strong id="stabilityStat">0.00</strong></span>
+      </div>
     </header>
 
     <main class="container">
       <section class="card">
-        <h2>User Flow (5 Minuten)</h2>
-        <ol>
-          <li>
-            <strong>Phase A - Erkennen:</strong> Audio + Wort, Antwort per Bild
-            oder Bedeutung.
-          </li>
-          <li>
-            <strong>Phase B - Struktur:</strong> Wortstamm + Endungen, richtige
-            Endung antippen.
-          </li>
-          <li>
-            <strong>Phase C - Produktion:</strong> Wort aktiv schreiben,
-            anschliessend LRS-freundliche Auswertung.
-          </li>
-        </ol>
-      </section>
-
-      <section class="card">
-        <h2>Datenmodell (Kern)</h2>
-        <ul>
-          <li><code>vocabulary</code>: lemma, word_stem, word_type, audio</li>
-          <li><code>grammar_suffixes</code>: suffix, function_label, color</li>
-          <li>
-            <code>vocabulary_form</code>: Verknuepfung von Stamm + Endung
-          </li>
-          <li>
-            <code>user_progress</code>: last_seen, stability, last_error_type
-          </li>
-          <li><code>image_upload</code> + <code>generated_task</code></li>
-        </ul>
-      </section>
-
-      <section class="card">
-        <h2>Bild-Upload zu Aufgaben</h2>
-        <p>
-          Upload -> OCR/Extraktion -> Aufgaben-Generator -> Freigabe ->
-          Sprint-Aufgaben.
-        </p>
-        <p>
-          So lassen sich Buchseiten oder Arbeitsblaetter direkt in uebbare
-          Aufgaben umwandeln.
-        </p>
-      </section>
-
-      <section class="card" id="demo">
-        <h2>Live Demo: Smart Correction (LRS-Filter)</h2>
+        <h2>1) Onboarding & Check-in</h2>
         <div class="grid">
           <label>
-            Erwarteter Stamm
-            <input id="expectedStem" value="trah" />
+            Name
+            <input id="nameInput" value="Schueler" />
           </label>
           <label>
-            Erwartete Endung
-            <input id="expectedSuffix" value="ere" />
+            Schulbuch
+            <input id="bookInput" value="Campus C" />
           </label>
-          <label class="full">
-            Nutzerantwort
-            <input id="userAnswer" value="traheere" />
+          <label>
+            Lektion
+            <input id="lessonInput" type="number" value="7" min="1" />
+          </label>
+          <label>
+            Sprint-Woerter
+            <select id="sprintWordCount">
+              <option value="2">2 Woerter (6 Aufgaben)</option>
+              <option value="3" selected>3 Woerter (9 Aufgaben)</option>
+              <option value="4">4 Woerter (12 Aufgaben)</option>
+            </select>
           </label>
         </div>
-        <button id="evaluateButton" class="button">Antwort auswerten</button>
-        <pre id="output"></pre>
+        <button id="startSprintButton" class="button">Daily Sprint starten</button>
+      </section>
+
+      <section class="card hidden" id="sprintCard">
+        <h2>2) Daily Sprint</h2>
+        <p id="sprintMeta">Noch kein Sprint gestartet.</p>
+        <div id="taskContainer"></div>
+        <div class="actions">
+          <button id="submitAnswerButton" class="button">Antwort pruefen</button>
+          <button id="nextTaskButton" class="button secondary hidden">Naechste Aufgabe</button>
+        </div>
+      </section>
+
+      <section class="card hidden" id="feedbackCard">
+        <h2>3) Intelligente Korrektur (LRS-Filter)</h2>
+        <pre id="feedbackOutput"></pre>
+      </section>
+
+      <section class="card">
+        <h2>4) Bild-Upload -> Aufgabenpool</h2>
+        <p>
+          Lade ein Bild hoch und gib erkannte Vokabelpaare ein. Jede Zeile:
+          <code>Latein - Deutsch</code>. Diese Woerter werden danach automatisch
+          im Sprint verwendet.
+        </p>
+        <div class="grid">
+          <label class="full">
+            Bilddatei
+            <input id="imageInput" type="file" accept="image/*" />
+          </label>
+          <label class="full">
+            Erkannte Vokabeln (eine Zeile pro Paar)
+            <textarea
+              id="vocabPairsInput"
+              rows="6"
+              placeholder="amare - lieben&#10;videre - sehen"
+            ></textarea>
+          </label>
+        </div>
+        <div class="actions">
+          <button id="importImageVocabButton" class="button">Vokabeln importieren</button>
+        </div>
+        <img id="imagePreview" class="preview hidden" alt="Bildvorschau" />
+        <p id="importStatus" class="muted"></p>
+        <ul id="importedList" class="import-list"></ul>
       </section>
     </main>
 
     <footer class="footer">
-      <p>Latein Sprint App - GitHub Pages Deployment</p>
+      <p>Latein Sprint App - GitHub Pages MVP</p>
     </footer>
-
     <script src="./app.js"></script>
   </body>
 </html>

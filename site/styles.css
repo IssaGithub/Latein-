@@ -65,6 +65,10 @@ h1 {
   cursor: pointer;
 }
 
+.secondary {
+  background: linear-gradient(90deg, #818cf8, #a78bfa);
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -91,6 +95,17 @@ input {
   color: var(--text);
 }
 
+select,
+textarea {
+  width: 100%;
+  padding: 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: #0b1222;
+  color: var(--text);
+  font: inherit;
+}
+
 pre {
   margin-top: 1rem;
   background: #020617;
@@ -98,6 +113,87 @@ pre {
   border-radius: 12px;
   padding: 0.8rem;
   overflow: auto;
+}
+
+.stats {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.chip {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  color: var(--muted);
+  background: rgba(2, 6, 23, 0.65);
+}
+
+.chip strong {
+  color: var(--text);
+}
+
+.hidden {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.task-title {
+  font-size: 1.1rem;
+  margin: 0.25rem 0 0.7rem;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.option-button {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: #0b1222;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.option-button.active {
+  border-color: var(--accent);
+  outline: 2px solid rgba(34, 211, 238, 0.3);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.preview {
+  margin-top: 0.8rem;
+  width: min(100%, 360px);
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.import-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  margin-left: 0.3rem;
+  background: rgba(56, 189, 248, 0.22);
+  color: #bae6fd;
 }
 
 .footer {
@@ -109,6 +205,10 @@ pre {
 
 @media (max-width: 700px) {
   .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .option-grid {
     grid-template-columns: 1fr;
   }
 }
