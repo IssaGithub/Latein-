@@ -12,6 +12,7 @@ const BASE_VOCABULARY = [
       { suffix: "at", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
       { suffix: "avisti", functionLabel: "2. Pers. Sg. Perfekt", colorCode: "#3b82f6" },
     ],
+    isVerifiedConjugation: true,
   },
   {
     id: "videre",
@@ -24,6 +25,7 @@ const BASE_VOCABULARY = [
       { suffix: "et", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
       { suffix: "isti", functionLabel: "2. Pers. Sg. Perfekt", colorCode: "#3b82f6" },
     ],
+    isVerifiedConjugation: true,
   },
   {
     id: "trahere",
@@ -33,9 +35,10 @@ const BASE_VOCABULARY = [
     emoji: "🧲",
     suffixes: [
       { suffix: "o", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
-      { suffix: "it", functionLabel: "3. Pers. Sg. Perfekt", colorCode: "#3b82f6" },
+      { suffix: "it", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
       { suffix: "unt", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
     ],
+    isVerifiedConjugation: true,
   },
   {
     id: "scribere",
@@ -45,9 +48,10 @@ const BASE_VOCABULARY = [
     emoji: "✍️",
     suffixes: [
       { suffix: "o", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
-      { suffix: "it", functionLabel: "3. Pers. Sg. Perfekt", colorCode: "#3b82f6" },
+      { suffix: "it", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
       { suffix: "imus", functionLabel: "1. Pers. Pl. Praesens", colorCode: "#eab308" },
     ],
+    isVerifiedConjugation: true,
   },
 ];
 
@@ -66,6 +70,11 @@ const SUFFIX_PROFILES = {
     { suffix: "o", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
     { suffix: "it", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
     { suffix: "unt", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
+  ],
+  thirdIo: [
+    { suffix: "io", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
+    { suffix: "it", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
+    { suffix: "iunt", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
   ],
   fourth: [
     { suffix: "io", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
@@ -88,7 +97,21 @@ const SECOND_CONJ_LEMMAS = new Set([
   "audere",
   "sedere",
   "manere",
+  "parere",
 ]);
+
+const THIRD_IO_LEMMAS = new Set(["facere", "capere", "iacere", "accipere", "recipere"]);
+
+const IRREGULAR_VERB_OVERRIDES = {
+  exire: {
+    stem: "ex",
+    suffixes: [
+      { suffix: "eo", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
+      { suffix: "it", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
+      { suffix: "eunt", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
+    ],
+  },
+};
 
 const CAMPUS2_LESSON_BANK = {
   1: [
@@ -233,6 +256,13 @@ const CAMPUS2_LESSON_BANK = {
   ],
 };
 
+const CURATED_VERIFIED_LEMMAS = new Set([
+  ...BASE_VOCABULARY.map((entry) => normalize(entry.lemma)),
+  ...Object.values(CAMPUS2_LESSON_BANK)
+    .flat()
+    .map((entry) => normalize(entry.lemma)),
+]);
+
 function normalize(input) {
   return (input || "").toLowerCase().trim().replace(/\s+/g, "");
 }
@@ -276,13 +306,28 @@ function deriveStemFromLemma(lemma) {
 
 function inferSuffixProfileForLemma(lemma) {
   const rawLemma = normalize(lemma);
+  if (IRREGULAR_VERB_OVERRIDES[rawLemma]) {
+    return IRREGULAR_VERB_OVERRIDES[rawLemma].suffixes;
+  }
   if (rawLemma.endsWith("are")) return SUFFIX_PROFILES.first;
   if (rawLemma.endsWith("ire")) return SUFFIX_PROFILES.fourth;
   if (rawLemma.endsWith("ere")) {
     if (SECOND_CONJ_LEMMAS.has(rawLemma)) return SUFFIX_PROFILES.second;
+    if (THIRD_IO_LEMMAS.has(rawLemma)) return SUFFIX_PROFILES.thirdIo;
     return SUFFIX_PROFILES.third;
   }
   return SUFFIX_PROFILES.third;
+}
+
+function isConjugationReliable(lemma) {
+  const rawLemma = normalize(lemma);
+  if (CURATED_VERIFIED_LEMMAS.has(rawLemma)) return true;
+  if (IRREGULAR_VERB_OVERRIDES[rawLemma]) return true;
+  if (rawLemma.endsWith("are")) return true;
+  if (rawLemma.endsWith("ire")) return true;
+  if (SECOND_CONJ_LEMMAS.has(rawLemma)) return true;
+  if (THIRD_IO_LEMMAS.has(rawLemma)) return true;
+  return false;
 }
 
 function buildVocabularyEntry({
@@ -291,16 +336,24 @@ function buildVocabularyEntry({
   meaning,
   emoji = "🧠",
   suffixes,
+  isVerifiedConjugation,
 }) {
   const normalizedLemma = normalize(lemma);
-  const profile = suffixes || inferSuffixProfileForLemma(normalizedLemma);
+  const irregularOverride = IRREGULAR_VERB_OVERRIDES[normalizedLemma];
+  const profile = suffixes || irregularOverride?.suffixes || inferSuffixProfileForLemma(normalizedLemma);
+  const stem = irregularOverride?.stem || deriveStemFromLemma(normalizedLemma);
+  const verifiedConjugation =
+    typeof isVerifiedConjugation === "boolean"
+      ? isVerifiedConjugation
+      : isConjugationReliable(normalizedLemma);
   return {
     id,
     lemma: normalizedLemma,
-    stem: deriveStemFromLemma(normalizedLemma),
+    stem,
     meaning: String(meaning || "").trim().toLowerCase(),
     emoji,
     suffixes: profile.map((item) => ({ ...item })),
+    isVerifiedConjugation: verifiedConjugation,
   };
 }
 
@@ -324,6 +377,7 @@ function getCampus2LessonVocabulary(lessonNumber) {
       lemma: row.lemma,
       meaning: row.meaning,
       emoji: row.emoji || "📘",
+      isVerifiedConjugation: true,
     })
   );
 }
@@ -540,6 +594,12 @@ function getLessonPool(bookName, lessonNumber) {
     usesNeighborLesson = true;
   }
 
+  let usedReliabilityFallback = false;
+  if (pool.filter((entry) => entry.isVerifiedConjugation).length < 2) {
+    pool = mergeVocabularyEntries(pool, BASE_VOCABULARY);
+    usedReliabilityFallback = true;
+  }
+
   let usesFallback = false;
   if (pool.length < 2) {
     pool = mergeVocabularyEntries(pool, BASE_VOCABULARY);
@@ -552,7 +612,7 @@ function getLessonPool(bookName, lessonNumber) {
     nearbyCampusLesson,
     importedForLesson,
     usesNeighborLesson,
-    usesFallback,
+    usesFallback: usesFallback || usedReliabilityFallback,
   };
 }
 
@@ -631,19 +691,20 @@ function startSprint() {
 
   const lessonPool = getLessonPool(state.profile.schoolBook, state.profile.lesson);
   const pool = lessonPool.pool;
-  if (pool.length < 2) {
+  const verifiedPool = pool.filter((entry) => entry.isVerifiedConjugation);
+  if (verifiedPool.length < 2) {
     alert("Zu wenig Woerter fuer diese Lektion. Lade erst ein Foto hoch oder waehle eine andere Lektion.");
     return;
   }
 
   const wordCount = Number(sprintWordCount.value || 3);
-  const chosenEntries = sample(pool, Math.min(wordCount, pool.length));
+  const chosenEntries = sample(verifiedPool, Math.min(wordCount, verifiedPool.length));
   const tasks = [];
 
   chosenEntries.forEach((entry, index) => {
-    tasks.push(buildWordCycleTask(entry, "recognition", index, pool));
-    tasks.push(buildWordCycleTask(entry, "structure", index, pool));
-    tasks.push(buildWordCycleTask(entry, "production", index, pool));
+    tasks.push(buildWordCycleTask(entry, "recognition", index, verifiedPool));
+    tasks.push(buildWordCycleTask(entry, "structure", index, verifiedPool));
+    tasks.push(buildWordCycleTask(entry, "production", index, verifiedPool));
   });
 
   state.activeSprint = {
@@ -683,21 +744,23 @@ function buildPracticeTasks(scannedPool, practiceWordCount) {
       helper: `${entry.emoji} Aus dem Buch-Scan`,
     });
 
-    const suffix = entry.suffixes[Math.floor(Math.random() * entry.suffixes.length)];
-    const expectedWord = `${entry.stem}${suffix.suffix}`;
-    tasks.push({
-      id: `practice-write-${entry.id}-${index}`,
-      kind: "write",
-      formKey: `${entry.id}::${suffix.suffix}`,
-      title: "Uebung 2 - Schreiben",
-      prompt: `Schreib die Form zu "${entry.lemma}" (${suffix.functionLabel}).`,
-      helper: `Stamm: ${entry.stem}- | Endung: ${suffix.suffix}`,
-      expectedStem: entry.stem,
-      expectedSuffix: suffix.suffix,
-      expectedWord,
-      colorCode: suffix.colorCode,
-      functionLabel: suffix.functionLabel,
-    });
+    if (entry.isVerifiedConjugation) {
+      const suffix = entry.suffixes[Math.floor(Math.random() * entry.suffixes.length)];
+      const expectedWord = `${entry.stem}${suffix.suffix}`;
+      tasks.push({
+        id: `practice-write-${entry.id}-${index}`,
+        kind: "write",
+        formKey: `${entry.id}::${suffix.suffix}`,
+        title: "Uebung 2 - Schreiben",
+        prompt: `Schreib die Form zu "${entry.lemma}" (${suffix.functionLabel}).`,
+        helper: `Stamm: ${entry.stem}- | Endung: ${suffix.suffix}`,
+        expectedStem: entry.stem,
+        expectedSuffix: suffix.suffix,
+        expectedWord,
+        colorCode: suffix.colorCode,
+        functionLabel: suffix.functionLabel,
+      });
+    }
   });
 
   return tasks;
@@ -721,6 +784,12 @@ function startPractice() {
 
   const practiceWordCount = Number(practiceWordCountSelect?.value || 3);
   const tasks = buildPracticeTasks(scannedPool, practiceWordCount);
+  if (tasks.length === 0) {
+    alert(
+      "Ich habe nur Woerter ohne verifizierte Formen gefunden. Diese werden sicherheitshalber nicht als Schreibaufgaben genutzt."
+    );
+    return;
+  }
   state.activePractice = {
     startedAt: new Date().toISOString(),
     taskIndex: 0,
@@ -1048,7 +1117,9 @@ function renderImportedList() {
   importedList.innerHTML = importedForLesson
     .map(
       (item) =>
-        `<li>${escapeHtml(item.lemma)} - ${escapeHtml(item.meaning)} <span class="muted">(Stamm: ${escapeHtml(item.stem)})</span></li>`
+        `<li>${escapeHtml(item.lemma)} - ${escapeHtml(item.meaning)} <span class="muted">(Stamm: ${escapeHtml(item.stem)} | ${
+          item.isVerifiedConjugation ? "Formen verifiziert" : "nur Bedeutung verifiziert"
+        })</span></li>`
     )
     .join("");
 }
@@ -1074,7 +1145,8 @@ function updateLessonPoolHint() {
     const maxLesson = availableLessons[availableLessons.length - 1];
 
     if (builtInCampusLesson.length > 0) {
-      lessonPoolHint.textContent = `Campus 2 Lektion ${selectedLesson}: ${builtInCampusLesson.length} Starter-Woerter + ${importedForLesson.length} eigene Woerter (verfuegbar: Lektion ${minLesson}-${maxLesson}).`;
+      const verifiedImported = importedForLesson.filter((item) => item.isVerifiedConjugation).length;
+      lessonPoolHint.textContent = `Campus 2 Lektion ${selectedLesson}: ${builtInCampusLesson.length} Starter-Woerter + ${importedForLesson.length} eigene Woerter (${verifiedImported} mit verifizierten Formen, verfuegbar: Lektion ${minLesson}-${maxLesson}).`;
       return;
     }
 
@@ -1093,7 +1165,8 @@ function updateLessonPoolHint() {
     return;
   }
 
-  lessonPoolHint.textContent = `${importedForLesson.length} eigene Woerter fuer diese Lektion bereit.`;
+  const verifiedImported = importedForLesson.filter((item) => item.isVerifiedConjugation).length;
+  lessonPoolHint.textContent = `${importedForLesson.length} eigene Woerter fuer diese Lektion bereit (${verifiedImported} mit verifizierten Formen).`;
 }
 
 function updateTabUI() {
@@ -1456,7 +1529,8 @@ bindClick(importImageVocabButton, () => {
   state.uploadedVocabulary = mergeVocabularyEntries(state.uploadedVocabulary, imported);
   state.profile.schoolBook = selectedBook;
   state.profile.lesson = selectedLesson;
-  importStatus.textContent = `${imported.length} neue Woerter fuer ${selectedBook} Lektion ${selectedLesson} gespeichert (Uebungen + Challenge).`;
+  const verifiedCount = imported.filter((item) => item.isVerifiedConjugation).length;
+  importStatus.textContent = `${imported.length} neue Woerter fuer ${selectedBook} Lektion ${selectedLesson} gespeichert (${verifiedCount} mit verifizierten Formen; nicht verifizierte werden nur in Bedeutungsaufgaben genutzt).`;
   vocabPairsInput.value = "";
   saveState();
   renderAll();
