@@ -51,11 +51,44 @@ const BASE_VOCABULARY = [
   },
 ];
 
-const DEFAULT_SUFFIXES = [
-  { suffix: "o", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
-  { suffix: "t", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
-  { suffix: "unt", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
-];
+const SUFFIX_PROFILES = {
+  first: [
+    { suffix: "o", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
+    { suffix: "at", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
+    { suffix: "ant", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
+  ],
+  second: [
+    { suffix: "eo", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
+    { suffix: "et", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
+    { suffix: "ent", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
+  ],
+  third: [
+    { suffix: "o", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
+    { suffix: "it", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
+    { suffix: "unt", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
+  ],
+  fourth: [
+    { suffix: "io", functionLabel: "1. Pers. Sg. Praesens", colorCode: "#22c55e" },
+    { suffix: "it", functionLabel: "3. Pers. Sg. Praesens", colorCode: "#22c55e" },
+    { suffix: "iunt", functionLabel: "3. Pers. Pl. Praesens", colorCode: "#eab308" },
+  ],
+};
+
+const SECOND_CONJ_LEMMAS = new Set([
+  "videre",
+  "habere",
+  "tenere",
+  "tacere",
+  "ridere",
+  "docere",
+  "monere",
+  "movere",
+  "timere",
+  "respondere",
+  "audere",
+  "sedere",
+  "manere",
+]);
 
 const CAMPUS2_LESSON_BANK = {
   1: [
@@ -241,21 +274,33 @@ function deriveStemFromLemma(lemma) {
   return rawLemma;
 }
 
+function inferSuffixProfileForLemma(lemma) {
+  const rawLemma = normalize(lemma);
+  if (rawLemma.endsWith("are")) return SUFFIX_PROFILES.first;
+  if (rawLemma.endsWith("ire")) return SUFFIX_PROFILES.fourth;
+  if (rawLemma.endsWith("ere")) {
+    if (SECOND_CONJ_LEMMAS.has(rawLemma)) return SUFFIX_PROFILES.second;
+    return SUFFIX_PROFILES.third;
+  }
+  return SUFFIX_PROFILES.third;
+}
+
 function buildVocabularyEntry({
   id,
   lemma,
   meaning,
   emoji = "🧠",
-  suffixes = DEFAULT_SUFFIXES,
+  suffixes,
 }) {
   const normalizedLemma = normalize(lemma);
+  const profile = suffixes || inferSuffixProfileForLemma(normalizedLemma);
   return {
     id,
     lemma: normalizedLemma,
     stem: deriveStemFromLemma(normalizedLemma),
     meaning: String(meaning || "").trim().toLowerCase(),
     emoji,
-    suffixes: suffixes.map((item) => ({ ...item })),
+    suffixes: profile.map((item) => ({ ...item })),
   };
 }
 
@@ -279,7 +324,6 @@ function getCampus2LessonVocabulary(lessonNumber) {
       lemma: row.lemma,
       meaning: row.meaning,
       emoji: row.emoji || "📘",
-      suffixes: DEFAULT_SUFFIXES,
     })
   );
 }
@@ -1146,7 +1190,6 @@ function buildImportedVocabulary(lines) {
       lemma: item.latin,
       meaning: item.german,
       emoji: "🖼️",
-      suffixes: DEFAULT_SUFFIXES,
     })
   );
 }
