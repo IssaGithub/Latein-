@@ -55,6 +55,15 @@ function normalize(input) {
   return (input || "").toLowerCase().trim().replace(/\s+/g, "");
 }
 
+function escapeHtml(input) {
+  return String(input)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function levenshteinDistance(a, b) {
   const rows = a.length + 1;
   const cols = b.length + 1;
@@ -160,7 +169,15 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    setRuntimeStatus("");
+  } catch {
+    setRuntimeStatus(
+      "Hinweis: Lokales Speichern ist im Browser blockiert. Die Buttons funktionieren, aber Fortschritt wird nicht gespeichert.",
+      true
+    );
+  }
 }
 
 function defaultState() {
@@ -387,37 +404,38 @@ function renderTask(task, sprint) {
 
   sprintMeta.textContent = `${state.profile.name} | ${state.profile.schoolBook} Lektion ${state.profile.lesson} | Aufgabe ${sprint.taskIndex + 1}/${sprint.tasks.length}`;
 
-  const colorBadge = `<span class="badge" style="background:${task.colorCode}33;color:#e2e8f0">${task.functionLabel}</span>`;
+  const colorBadge = `<span class="badge" style="background:${task.colorCode}33;color:#e2e8f0">${escapeHtml(task.functionLabel)}</span>`;
   if (task.phase === "production") {
     taskContainer.innerHTML = `
       <h3 class="task-title">${task.title} ${colorBadge}</h3>
-      <p>${task.prompt}</p>
-      <p class="muted">${task.helper}</p>
+      <p>${escapeHtml(task.prompt)}</p>
+      <p class="muted">${escapeHtml(task.helper)}</p>
       <label>
         Deine Antwort
-        <input id="productionInput" autocomplete="off" placeholder="z. B. ${task.expectedWord}" />
+        <input id="productionInput" autocomplete="off" placeholder="z. B. ${escapeHtml(task.expectedWord)}" />
       </label>
     `;
     return;
   }
 
   const optionsHtml = task.options
-    .map((option) => {
+    .map((option, optionIndex) => {
       const active = sprint.selectedOption === option ? "active" : "";
-      return `<button class="option-button ${active}" data-option="${option}">${option}</button>`;
+      return `<button type="button" class="option-button ${active}" data-option-index="${optionIndex}">${escapeHtml(option)}</button>`;
     })
     .join("");
 
   taskContainer.innerHTML = `
     <h3 class="task-title">${task.title} ${colorBadge}</h3>
-    <p>${task.prompt}</p>
-    <p class="muted">${task.helper}</p>
+    <p>${escapeHtml(task.prompt)}</p>
+    <p class="muted">${escapeHtml(task.helper)}</p>
     <div class="option-grid">${optionsHtml}</div>
   `;
 
   Array.from(taskContainer.querySelectorAll(".option-button")).forEach((button) => {
     button.addEventListener("click", () => {
-      sprint.selectedOption = button.dataset.option;
+      const index = Number(button.dataset.optionIndex);
+      sprint.selectedOption = task.options[index] || null;
       saveState();
       renderAll();
     });
@@ -440,7 +458,10 @@ function renderImportedList() {
     return;
   }
   importedList.innerHTML = state.uploadedVocabulary
-    .map((item) => `<li>${item.lemma} - ${item.meaning} <span class="muted">(Stamm: ${item.stem})</span></li>`)
+    .map(
+      (item) =>
+        `<li>${escapeHtml(item.lemma)} - ${escapeHtml(item.meaning)} <span class="muted">(Stamm: ${escapeHtml(item.stem)})</span></li>`
+    )
     .join("");
 }
 
@@ -535,23 +556,48 @@ const importImageVocabButton = document.getElementById("importImageVocabButton")
 const imagePreview = document.getElementById("imagePreview");
 const importStatus = document.getElementById("importStatus");
 const importedList = document.getElementById("importedList");
+const runtimeStatus = document.getElementById("runtimeStatus");
 
-startSprintButton.addEventListener("click", startSprint);
-submitAnswerButton.addEventListener("click", gradeCurrentTask);
-nextTaskButton.addEventListener("click", nextTask);
+function setRuntimeStatus(message, isError = false) {
+  if (!runtimeStatus) return;
+  runtimeStatus.textContent = message || "";
+  runtimeStatus.style.color = isError ? "#fca5a5" : "";
+}
 
-imageInput.addEventListener("change", () => {
-  const file = imageInput.files?.[0];
-  if (!file) {
-    imagePreview.classList.add("hidden");
-    imagePreview.removeAttribute("src");
-    return;
-  }
-  imagePreview.src = URL.createObjectURL(file);
-  imagePreview.classList.remove("hidden");
-});
+function bindClick(element, handler) {
+  if (!element) return;
+  element.addEventListener("click", (event) => {
+    event.preventDefault();
+    try {
+      handler();
+    } catch (error) {
+      console.error(error);
+      setRuntimeStatus(
+        "Ein Laufzeitfehler ist aufgetreten. Bitte Seite neu laden (Strg+F5).",
+        true
+      );
+    }
+  });
+}
 
-importImageVocabButton.addEventListener("click", () => {
+bindClick(startSprintButton, startSprint);
+bindClick(submitAnswerButton, gradeCurrentTask);
+bindClick(nextTaskButton, nextTask);
+
+if (imageInput && imagePreview) {
+  imageInput.addEventListener("change", () => {
+    const file = imageInput.files?.[0];
+    if (!file) {
+      imagePreview.classList.add("hidden");
+      imagePreview.removeAttribute("src");
+      return;
+    }
+    imagePreview.src = URL.createObjectURL(file);
+    imagePreview.classList.remove("hidden");
+  });
+}
+
+bindClick(importImageVocabButton, () => {
   const lines = vocabPairsInput.value.split("\n");
   const imported = buildImportedVocabulary(lines);
   if (imported.length === 0) {
@@ -566,4 +612,12 @@ importImageVocabButton.addEventListener("click", () => {
   renderAll();
 });
 
-renderAll();
+try {
+  renderAll();
+} catch (error) {
+  console.error(error);
+  setRuntimeStatus(
+    "Die App konnte nicht initialisiert werden. Bitte Seite neu laden (Strg+F5).",
+    true
+  );
+}

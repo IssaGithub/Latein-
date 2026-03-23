@@ -46,7 +46,7 @@
             </select>
           </label>
         </div>
-        <button id="startSprintButton" class="button">Daily Sprint starten</button>
+        <button id="startSprintButton" type="button" class="button">Daily Sprint starten</button>
       </section>
 
       <section class="card hidden" id="sprintCard">
@@ -54,8 +54,8 @@
         <p id="sprintMeta">Noch kein Sprint gestartet.</p>
         <div id="taskContainer"></div>
         <div class="actions">
-          <button id="submitAnswerButton" class="button">Antwort pruefen</button>
-          <button id="nextTaskButton" class="button secondary hidden">Naechste Aufgabe</button>
+          <button id="submitAnswerButton" type="button" class="button">Antwort pruefen</button>
+          <button id="nextTaskButton" type="button" class="button secondary hidden">Naechste Aufgabe</button>
         </div>
       </section>
 
@@ -86,7 +86,7 @@
           </label>
         </div>
         <div class="actions">
-          <button id="importImageVocabButton" class="button">Vokabeln importieren</button>
+          <button id="importImageVocabButton" type="button" class="button">Vokabeln importieren</button>
         </div>
         <img id="imagePreview" class="preview hidden" alt="Bildvorschau" />
         <p id="importStatus" class="muted"></p>
@@ -96,7 +96,8 @@
 
     <footer class="footer">
       <p>Latein Sprint App - GitHub Pages MVP</p>
+      <p id="runtimeStatus" class="muted"></p>
     </footer>
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20260323-1"></script>
   </body>
 </html>
